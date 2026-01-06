@@ -1,5 +1,5 @@
-import my_package
+import toolsets
 
 
 def test_basic():
-    assert my_package.__version__
+    assert toolsets.__version__

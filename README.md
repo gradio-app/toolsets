@@ -1,32 +1,28 @@
-# my-package
+# toolsets
 
-A Python package template.
-
-> **Note**: Replace `my-package` and `my_package` throughout this repository with your actual package name.
+A Python toolsets library.
 
 ## Installation
 
 This package requires [Python 3.10 or higher](https://www.python.org/downloads/). Install with `pip`:
 
 ```bash
-pip install my-package
+pip install toolsets
 ```
 
 or with `uv`:
 
 ```bash
-uv pip install my-package
+uv pip install toolsets
 ```
 
 ## Usage
 
 ```python
-import my_package
+import toolsets
 
 # Your code here
 ```
-
-Replace `my_package` with your actual package name.
 
 ## Development
 
@@ -64,7 +60,7 @@ The `changesets/action` requires a GitHub Personal Access Token to create pull r
 
 1. Go to GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
 2. Click "Generate new token (classic)"
-3. Name it (e.g., "my-package-ci")
+3. Name it (e.g., "toolsets-ci")
 4. Set expiration (or no expiration)
 5. Select the following scopes:
    - `repo` (full control of private repositories) — or at minimum:
@@ -94,7 +90,7 @@ The workflow uses OpenID Connect (OIDC) to authenticate with PyPI, which require
 3. Select **GitHub** as the provider
 4. Enter the following information:
    - **Owner**: Your GitHub organization or username (e.g., `your-org` or `your-username`)
-   - **Repository name**: Your repository name (e.g., `my-package`)
+   - **Repository name**: Your repository name (e.g., `toolsets`)
    - **Workflow filename**: `.github/workflows/publish.yml`
    - **Environment name**: `publish` (since the workflow uses `environment: publish`)
 5. Click "Add"

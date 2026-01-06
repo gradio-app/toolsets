@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "my-package"
-description = "A Python package template"
+name = "toolsets"
+description = "A Python toolsets library"
 authors = [
     { name = "Your Name", email = "your.email@example.com" },
 ]
@@ -29,13 +29,13 @@ dev = [
 ]
 
 # [project.scripts]
-# my-package = "my_package.cli:main"
+# toolsets = "toolsets.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["my_package"]
+packages = ["toolsets"]
 
 [tool.hatch.version]
-path = "my_package/package.json"
+path = "toolsets/package.json"
 pattern = ".*\"version\":\\s*\"(?P<version>[^\"]+)\""
 
 [tool.ruff]

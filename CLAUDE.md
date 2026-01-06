@@ -39,7 +39,7 @@ Tests are located in the `tests/` directory. The `conftest.py` provides shared f
 
 ### Important Files for Common Tasks
 
-- **Adding new features**: Modify `my_package/__init__.py` and relevant modules
+- **Adding new features**: Modify `toolsets/__init__.py` and relevant modules
 - **CLI modifications**: Update entry points in `pyproject.toml`
 - **Adding dependencies**: Update `pyproject.toml` under `[project.dependencies]` or `[project.optional-dependencies]`
 

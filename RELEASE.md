@@ -23,7 +23,7 @@ git checkout -b release-v{major}.{minor}
 
 ### 3. Change the version in the following file
 
-- `my_package/package.json`:
+- `toolsets/package.json`:
 
   ```diff
   - "version": "{major}.{minor}.0.dev0"
@@ -33,7 +33,7 @@ git checkout -b release-v{major}.{minor}
 ### 4. Commit and push these changes
 
 ```shell
-git add my-package/package.json
+git add toolsets/package.json
 git commit -m 'Release: {major}.{minor}'
 git push origin release-v{major}.{minor}
 ```
@@ -80,7 +80,7 @@ This ensures that future patch releases (`v{major}.{minor}.1`, `v{major}.{minor}
    git checkout -b bump-dev-version-{major}.{minor+1}
    ```
 
-2. Change the version in `my-package/package.json`
+2. Change the version in `toolsets/package.json`
 
    ```diff
    - "version": "{major}.{minor}.0"
@@ -90,7 +90,7 @@ This ensures that future patch releases (`v{major}.{minor}.1`, `v{major}.{minor}
 3. Commit and push these changes
 
    ```shell
-   git add my-package/package.json
+   git add toolsets/package.json
    git commit -m '⬆️ Bump dev version'
    git push origin bump-dev-version-{major}.{minor+1}
    ```
@@ -120,7 +120,7 @@ git cherry-pick <commit-hash-1>
 
 ### 3. Change the version in the following files
 
-- `my_package/package.json`:
+- `toolsets/package.json`:
 
   ```diff
   - "version": "{major}.{minor}.{patch-1}"
@@ -130,7 +130,7 @@ git cherry-pick <commit-hash-1>
 ### 4. Commit and push these changes
 
 ```shell
-git add my-package/package.json
+git add toolsets/package.json
 git commit -m 'Release: {major}.{minor}.{patch}'
 git push origin v{major}.{minor}-release
 ```
