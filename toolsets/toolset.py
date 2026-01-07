@@ -20,9 +20,12 @@ class Toolset:
 
     def add(
         self,
-        space_name_or_url: str,
+        url_or_space: str,
         tools: Optional[List[str]] = None
     ):
+        """
+        Add tools from a Gradio Space or a full URL pointing to the /mcp
+        """
         embedder = self._get_embedder()
         client = MCPClient("")
 
