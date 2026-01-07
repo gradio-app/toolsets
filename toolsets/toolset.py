@@ -3,15 +3,16 @@ from sentence_transformers import SentenceTransformer
 import os
 
 from .vector_store import VectorStore
-from .mcp_client import MCPClient
+from .mcp_client import get_mcp_tools, execute_tool, normalize_space_url
 
 
 class Toolset:
     def __init__(self, persist_directory: Optional[str] = None):
         self.vector_store = VectorStore(persist_directory)
         self.embedder = None
-        self._spaces: Dict[str, str] = {}
+        self._urls: Dict[str, str] = {}
         self._tool_registry: Dict[str, Dict[str, Any]] = {}
+        self._pending_tools: List[Dict[str, Any]] = []
 
     def _get_embedder(self) -> SentenceTransformer:
         if self.embedder is None:
@@ -21,56 +22,49 @@ class Toolset:
     def add(
         self,
         url_or_space: str,
-        tools: Optional[List[str]] = None
+        tools: Optional[List[str]] = None,
+        defer_loading: bool = False
     ):
         """
-        Add tools from a Gradio Space or a full URL pointing to the /mcp
+        Add tools from an existing MCP server to the toolset.
+
+        Parameters:
+            url_or_space: The full URL to the /mcp endpoint (e.g. https://username-spacename.hf.space/gradio_api/mcp) or Gradio Space name ("username/spacename") of the MCP server to add.
+            tools: Optional list of tool names to filter. If None, all tools are added from the MCP server.
+            defer_loading: If True, the MCP tool descriptions will not be loaded and instead the Toolset will use a "tool search" tool to find tools matching the user's query.
         """
-        embedder = self._get_embedder()
-        client = MCPClient("")
+        normalized_url = normalize_space_url(url_or_space)
 
-        try:
-            normalized_url = client._normalize_space_url(space_name_or_url)
-            if "/" in space_name_or_url:
-                space_name = space_name_or_url.split("/")[-1]
-            else:
-                space_name = space_name_or_url
+        mcp_tools = get_mcp_tools(url_or_space)
 
-            mcp_tools = client.get_tools(space_name_or_url)
+        if tools is not None:
+            tool_names_set = set(tools)
+            mcp_tools = [t for t in mcp_tools if t.get("name") in tool_names_set]
 
-            if tools is not None:
-                tool_names_set = set(tools)
-                mcp_tools = [t for t in mcp_tools if t.get("name") in tool_names_set]
+        for tool in mcp_tools:
+            tool_name = tool.get("name", "unknown")
+            tool_id = f"{normalized_url}::{tool_name}"
+            description = tool.get("description", "")
+            schema = tool.get("inputSchema", {})
 
-            for tool in mcp_tools:
-                tool_name = tool.get("name", "unknown")
-                tool_id = f"{space_name}::{tool_name}"
-                description = tool.get("description", "")
-                schema = tool.get("inputSchema", {})
+            self._tool_registry[tool_id] = {
+                "url": normalized_url,
+                "tool_name": tool_name,
+                "description": description,
+                "schema": schema
+            }
 
-                text_to_embed = f"{tool_name}: {description}"
-                embedding = embedder.encode(text_to_embed).tolist()
-
-                self.vector_store.add_tool(
-                    tool_id=tool_id,
-                    name=tool_name,
-                    description=description,
-                    schema=schema,
-                    space_url=normalized_url,
-                    space_name=space_name,
-                    embedding=embedding
-                )
-
-                self._tool_registry[tool_id] = {
-                    "space_url": normalized_url,
-                    "space_name": space_name,
-                    "tool_name": tool_name
+            if not defer_loading:
+                tool_info = {
+                    "tool_id": tool_id,
+                    "name": tool_name,
+                    "description": description,
+                    "schema": schema,
+                    "url": normalized_url
                 }
+                self._pending_tools.append(tool_info)
 
-            self._spaces[space_name] = normalized_url
-
-        finally:
-            client.close()
+        self._urls[normalized_url] = normalized_url
 
     def search_tools(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
         embedder = self._get_embedder()
@@ -82,14 +76,10 @@ class Toolset:
             raise ValueError(f"Tool {tool_id} not found in registry")
 
         tool_info = self._tool_registry[tool_id]
-        space_url = tool_info["space_url"]
+        url = tool_info["url"]
         tool_name = tool_info["tool_name"]
 
-        client = MCPClient("")
-        try:
-            return client.execute_tool(tool_name, parameters, space_url)
-        finally:
-            client.close()
+        return execute_tool(url, tool_name, parameters)
 
     def launch(self, port: int = 7860, share: bool = False, server_name: Optional[str] = None):
         from .gradio_app import create_gradio_app

@@ -14,7 +14,8 @@ def create_gradio_app(toolset: Toolset):
                 return "No tools found matching your query."
             result = []
             for i, tool in enumerate(tools, 1):
-                result.append(f"{i}. **{tool['name']}** (from {tool['space_name']})")
+                url = tool.get('url', 'unknown')
+                result.append(f"{i}. **{tool['name']}** (from {url})")
                 result.append(f"   Description: {tool['description']}")
                 result.append(f"   Tool ID: `{tool['id']}`")
                 result.append(f"   Distance: {tool.get('distance', 'N/A'):.4f}")
@@ -91,7 +92,7 @@ def create_gradio_app(toolset: Toolset):
                 with gr.Column():
                     tool_id_input = gr.Textbox(
                         label="Tool ID",
-                        placeholder="space_name::tool_name",
+                        placeholder="url::tool_name",
                         lines=1
                     )
                     tool_params = gr.Textbox(
@@ -117,7 +118,7 @@ def create_gradio_app(toolset: Toolset):
                 with gr.Column():
                     schema_tool_id = gr.Textbox(
                         label="Tool ID",
-                        placeholder="space_name::tool_name",
+                        placeholder="url::tool_name",
                         lines=1
                     )
                     schema_btn = gr.Button("Get Schema", variant="primary")
@@ -134,14 +135,14 @@ def create_gradio_app(toolset: Toolset):
             )
 
         with gr.Tab("Info"):
-            gr.Markdown("## Registered Spaces")
-            spaces_info = gr.Markdown()
+            gr.Markdown("## Registered MCP Servers")
+            urls_info = gr.Markdown()
             app.load(
                 fn=lambda: "\n".join([
-                    f"- **{name}**: {url}"
-                    for name, url in toolset._spaces.items()
-                ]) if toolset._spaces else "No spaces registered yet.",
-                outputs=spaces_info
+                    f"- {url}"
+                    for url in toolset._urls.keys()
+                ]) if toolset._urls else "No MCP servers registered yet.",
+                outputs=urls_info
             )
 
     return app

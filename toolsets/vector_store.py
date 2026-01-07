@@ -30,8 +30,7 @@ class VectorStore:
         name: str,
         description: str,
         schema: Dict[str, Any],
-        space_url: str,
-        space_name: str,
+        url: str,
         embedding: List[float]
     ):
         self.collection.add(
@@ -41,8 +40,7 @@ class VectorStore:
             metadatas=[{
                 "name": name,
                 "description": description,
-                "space_url": space_url,
-                "space_name": space_name,
+                "url": url,
                 "tool_id": tool_id
             }]
         )
@@ -64,8 +62,7 @@ class VectorStore:
                     "id": tool_id,
                     "name": metadata["name"],
                     "description": metadata["description"],
-                    "space_url": metadata["space_url"],
-                    "space_name": metadata["space_name"],
+                    "url": metadata["url"],
                     "schema": tool_schema,
                     "distance": results["distances"][0][i] if results["distances"] else None
                 })

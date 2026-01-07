@@ -1,89 +1,74 @@
-import httpx
+import asyncio
 from typing import Dict, Any, List, Optional
-import json
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
 
 
-class MCPClient:
-    def __init__(self, base_url: str, timeout: float = 30.0):
-        self.base_url = base_url.rstrip("/")
-        self.timeout = timeout
-        self.client = httpx.Client(timeout=timeout)
+def normalize_space_url(space_name_or_url: str) -> str:
+    if space_name_or_url.startswith("http://") or space_name_or_url.startswith("https://"):
+        url = space_name_or_url.rstrip("/")
+        if not url.endswith("/gradio_api/mcp"):
+            if url.endswith("/gradio_api/mcp/"):
+                return url.rstrip("/")
+            return f"{url}/gradio_api/mcp"
+        return url
+    if "/" in space_name_or_url:
+        base_url = f"https://huggingface.co/spaces/{space_name_or_url}"
+    else:
+        base_url = f"https://huggingface.co/spaces/{space_name_or_url}"
+    return f"{base_url}/gradio_api/mcp"
 
-    def _normalize_space_url(self, space_name_or_url: str) -> str:
-        if space_name_or_url.startswith("http://") or space_name_or_url.startswith("https://"):
-            return space_name_or_url
-        if "/" in space_name_or_url:
-            return f"https://huggingface.co/spaces/{space_name_or_url}"
-        return f"https://huggingface.co/spaces/{space_name_or_url}"
 
-    def get_mcp_schema(self, space_name_or_url: Optional[str] = None) -> Dict[str, Any]:
-        url = self.base_url
-        if space_name_or_url:
-            url = self._normalize_space_url(space_name_or_url)
+async def get_mcp_tools_async(url_or_space: str) -> List[Dict[str, Any]]:
+    mcp_url = normalize_space_url(url_or_space)
+    
+    async with streamablehttp_client(mcp_url) as (read_stream, write_stream, _):
+        async with ClientSession(read_stream, write_stream) as session:
+            await session.initialize()
+            
+            tools_response = await session.list_tools()
+            tools = []
+            for tool in tools_response.tools:
+                tools.append({
+                    "name": tool.name,
+                    "description": tool.description or "",
+                    "inputSchema": tool.inputSchema
+                })
+            return tools
 
-        endpoints = [
-            f"{url}/gradio_api/mcp/schema",
-            f"{url}/api/mcp/schema",
-            f"{url}/mcp/schema"
-        ]
 
-        last_error = None
-        for endpoint in endpoints:
-            try:
-                response = self.client.get(endpoint)
-                response.raise_for_status()
-                return response.json()
-            except httpx.HTTPError as e:
-                last_error = e
-                continue
+async def execute_tool_async(url_or_space: str, tool_name: str, arguments: Dict[str, Any]) -> Any:
+    mcp_url = normalize_space_url(url_or_space)
+    
+    async with streamablehttp_client(mcp_url) as (read_stream, write_stream, _):
+        async with ClientSession(read_stream, write_stream) as session:
+            await session.initialize()
+            
+            result = await session.call_tool(tool_name, arguments=arguments)
+            
+            if result.content and len(result.content) > 0:
+                content = result.content[0]
+                if hasattr(content, "text"):
+                    return content.text
+                return str(content)
+            return None
 
-        raise ConnectionError(f"Failed to fetch MCP schema from {url}. Tried: {endpoints}. Last error: {last_error}")
 
-    def get_tools(self, space_name_or_url: Optional[str] = None) -> List[Dict[str, Any]]:
-        schema = self.get_mcp_schema(space_name_or_url)
-        tools = schema.get("tools", [])
-        return tools
+def get_mcp_tools(url_or_space: str) -> List[Dict[str, Any]]:
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    return loop.run_until_complete(get_mcp_tools_async(url_or_space))
 
-    def execute_tool(
-        self,
-        tool_name: str,
-        arguments: Dict[str, Any],
-        space_name_or_url: Optional[str] = None
-    ) -> Any:
-        url = self.base_url
-        if space_name_or_url:
-            url = self._normalize_space_url(space_name_or_url)
 
-        endpoints = [
-            f"{url}/gradio_api/mcp/call",
-            f"{url}/api/mcp/call",
-            f"{url}/mcp/call"
-        ]
-
-        payload = {
-            "name": tool_name,
-            "arguments": arguments
-        }
-
-        last_error = None
-        for endpoint in endpoints:
-            try:
-                response = self.client.post(endpoint, json=payload)
-                response.raise_for_status()
-                result = response.json()
-                return result.get("content", result)
-            except httpx.HTTPError as e:
-                last_error = e
-                continue
-
-        raise RuntimeError(f"Failed to execute tool {tool_name} on {url}. Tried: {endpoints}. Last error: {last_error}")
-
-    def close(self):
-        self.client.close()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-
+def execute_tool(url_or_space: str, tool_name: str, arguments: Dict[str, Any]) -> Any:
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    return loop.run_until_complete(execute_tool_async(url_or_space, tool_name, arguments))
