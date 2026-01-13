@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo.png" alt="Toolsets Logo" width="300">
+  <img src="logo.png" alt="Toolsets Logo" width="60%">
 </div>
 
 # toolsets
