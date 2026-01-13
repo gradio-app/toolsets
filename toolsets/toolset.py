@@ -99,7 +99,9 @@ class Toolset:
             texts.append(text)
             self._deferred_tool_names.append(tool_name)
 
-        self._deferred_tool_embeddings = model.encode(texts, convert_to_numpy=True).tolist()
+        self._deferred_tool_embeddings = model.encode(
+            texts, convert_to_numpy=True
+        ).tolist()
 
     def _search_deferred_tools(
         self, query: str, top_k: int = 2
@@ -116,8 +118,8 @@ class Toolset:
             return []
 
         try:
-            from sentence_transformers import SentenceTransformer
             import numpy as np
+            from sentence_transformers import SentenceTransformer
         except ImportError:
             return []
 
@@ -480,9 +482,7 @@ class Toolset:
                 import json
 
                 content = [
-                    types.TextContent(
-                        type="text", text=json.dumps(results, indent=2)
-                    )
+                    types.TextContent(type="text", text=json.dumps(results, indent=2))
                 ]
                 return types.CallToolResult(content=content)
 
