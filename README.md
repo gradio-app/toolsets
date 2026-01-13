@@ -8,10 +8,11 @@ A Python library for aggregating multiple MCP (Model Context Protocol) servers i
 
 ## Features
 
-- **MCP Server Aggregation**: Combine tools from multiple Gradio Spaces and MCP servers
-- **Pass-Through MCP Server**: Expose all aggregated tools through a single MCP endpoint
-- **Deferred Tool Loading**: Use semantic search to discover and load tools on-demand
+- **MCP Server Aggregation**: Combine tools from multiple Gradio Spaces and MCP servers and expose all aggregated tools through a single MCP endpoint
 - **Gradio Interface**: Built-in UI for testing and exploring available tools
+- **Deferred Tool Loading**: Use semantic search to discover and load tools on-demand
+
+
 
 ## Installation
 
@@ -90,35 +91,7 @@ t = Toolset("My Tools", embedding_model="all-mpnet-base-v2")
 t.add(Server("gradio/mcp_tools"), defer_loading=True)
 t.launch()
 ```
-
-## API Reference
-
-### `Toolset(name: Optional[str] = None, embedding_model: Optional[str] = None)`
-
-Create a new Toolset instance.
-
-**Parameters:**
-- `name` (Optional[str]): Name for the toolset (displayed in UI)
-- `embedding_model` (Optional[str]): Sentence-transformers model name for deferred tools (default: "all-MiniLM-L6-v2")
-
-### `add(element: ToolsetElement, defer_loading: bool = False) -> Toolset`
-
-Add a toolset element (e.g., Server) to the toolset.
-
-**Parameters:**
-- `element` (ToolsetElement): The toolset element to add (typically a `Server` instance)
-- `defer_loading` (bool): If True, tools are deferred and accessible via semantic search
-
-**Returns:**
-- `Toolset`: Returns self for method chaining
-
-### `launch()`
-
-Launch the Gradio interface and MCP server. The MCP server is available at `/gradio_api/mcp`.
-
-### `create_mcp_server() -> Server`
-
-Create an MCP server instance that can be integrated into custom applications.
+.
 
 ## Roadmap
 
