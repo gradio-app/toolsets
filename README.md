@@ -9,9 +9,8 @@ A Python library for aggregating multiple MCP (Model Context Protocol) servers i
 ## Features
 
 - **MCP Server Aggregation**: Combine tools from multiple Gradio Spaces and MCP servers and expose all aggregated tools through a single MCP endpoint.
-- **Free hosting on Hugging Face Spaces**: A Toolset itself is _also_ a Gradio application, so you can host it for free on [Hugging Face Spaces](https://huggingface.co/spaces/)
-- **Gradio Interface**: Built-in UI for testing and exploring available tools
-- **Deferred Tool Loading**: Use semantic search to discover and load tools on-demand. This is useful when you have 100s of tools or more as it can save the context length of your model.
+- **Free hosting on Hugging Face Spaces**: A Toolset itself is _also_ a Gradio application (including a built-in UI for testing and exploring available tools) , so you can host it for free on [Hugging Face Spaces](https://huggingface.co/spaces/)
+- **Deferred Tool Loading**: Use semantic search to discover and load tools on-demand. Like Claude's [Advanced Tool Usage](https://www.anthropic.com/engineering/advanced-tool-use) but for any LLM. This is useful when you have 100s of tools or more as it can save the context length of your model.
 
 <img width="1408" height="768" alt="Gemini_Generated_Image_7za89y7za89y7za8_50 (1)" src="https://github.com/user-attachments/assets/851d1e5b-66d7-4000-ac98-2755b31b36ef" />
 
