@@ -7,3 +7,7 @@ class ToolsetElement(ABC):
     def get_tools(self) -> List[Dict[str, Any]]:
         pass
 
+    @abstractmethod
+    def execute_tool(self, tool_name: str, parameters: Dict[str, Any]) -> Any:
+        pass
+
