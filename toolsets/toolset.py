@@ -1,9 +1,11 @@
-from typing import List, Optional, Dict, Any
-from sentence_transformers import SentenceTransformer
+from typing import List, Optional, Dict, Any, TYPE_CHECKING
 import os
 
 from .vector_store import VectorStore
 from .mcp_client import get_mcp_tools, execute_tool, normalize_space_url
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
 
 
 class Toolset:
@@ -14,8 +16,9 @@ class Toolset:
         self._tool_registry: Dict[str, Dict[str, Any]] = {}
         self._pending_tools: List[Dict[str, Any]] = []
 
-    def _get_embedder(self) -> SentenceTransformer:
+    def _get_embedder(self):
         if self.embedder is None:
+            from sentence_transformers import SentenceTransformer
             self.embedder = SentenceTransformer("all-MiniLM-L6-v2")
         return self.embedder
 
@@ -54,15 +57,19 @@ class Toolset:
                 "schema": schema
             }
 
-            if not defer_loading:
-                tool_info = {
-                    "tool_id": tool_id,
-                    "name": tool_name,
-                    "description": description,
-                    "schema": schema,
-                    "url": normalized_url
-                }
-                self._pending_tools.append(tool_info)
+            if defer_loading:
+                embedder = self._get_embedder()
+                text_to_embed = f"{tool_name}: {description}"
+                embedding = embedder.encode(text_to_embed).tolist()
+
+                self.vector_store.add_tool(
+                    tool_id=tool_id,
+                    name=tool_name,
+                    description=description,
+                    schema=schema,
+                    url=normalized_url,
+                    embedding=embedding
+                )
 
         self._urls[normalized_url] = normalized_url
 

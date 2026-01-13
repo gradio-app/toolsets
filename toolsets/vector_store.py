@@ -1,5 +1,3 @@
-import chromadb
-from chromadb.config import Settings
 from typing import List, Dict, Any, Optional
 import os
 import json
@@ -11,18 +9,36 @@ class VectorStore:
             persist_directory = os.path.join(os.path.expanduser("~"), ".toolsets", "chroma")
         os.makedirs(persist_directory, exist_ok=True)
 
+        self.persist_directory = persist_directory
         self.schemas_file = os.path.join(persist_directory, "tool_schemas.json")
-
-        self.client = chromadb.PersistentClient(
-            path=persist_directory,
-            settings=Settings(anonymized_telemetry=False)
-        )
-        self.collection = self.client.get_or_create_collection(
-            name="tools",
-            metadata={"hnsw:space": "cosine"}
-        )
-
+        self._client = None
+        self._collection = None
+        self._tool_schemas = {}
         self._load_schemas()
+
+    def _ensure_initialized(self):
+        if self._client is None:
+            import chromadb
+            from chromadb.config import Settings
+
+            self._client = chromadb.PersistentClient(
+                path=self.persist_directory,
+                settings=Settings(anonymized_telemetry=False)
+            )
+            self._collection = self._client.get_or_create_collection(
+                name="tools",
+                metadata={"hnsw:space": "cosine"}
+            )
+
+    @property
+    def client(self):
+        self._ensure_initialized()
+        return self._client
+
+    @property
+    def collection(self):
+        self._ensure_initialized()
+        return self._collection
 
     def add_tool(
         self,
