@@ -31,6 +31,9 @@ dev = [
     "pytest>=8.0.0,<9.0.0",
     "pytest-asyncio>=0.21.0",
 ]
+deferred = [
+    "sentence-transformers>=2.2.0",
+]
 
 # [project.scripts]
 # toolsets = "toolsets.cli:main"
