@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List
 
 
 class ToolsetElement(ABC):
@@ -10,4 +10,3 @@ class ToolsetElement(ABC):
     @abstractmethod
     def execute_tool(self, tool_name: str, parameters: Dict[str, Any]) -> Any:
         pass
-

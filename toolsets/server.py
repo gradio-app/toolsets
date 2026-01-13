@@ -1,9 +1,11 @@
 import asyncio
 import re
+from typing import Any, Dict, List, Optional
+
 import httpx
-from typing import List, Optional, Dict, Any
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
+
 from .toolset_element import ToolsetElement
 
 
@@ -26,7 +28,10 @@ class Server(ToolsetElement):
 
     def _resolve_mcp_url(self, url_or_space: str) -> str:
         if url_or_space.startswith("http://") or url_or_space.startswith("https://"):
-            return url_or_space.rstrip("/")
+            url = url_or_space.rstrip("/")
+            if not url.endswith("/gradio_api/mcp"):
+                return url
+            return f"{url}/"
 
         space_id = url_or_space
         embed_url = f"https://huggingface.co/spaces/{space_id}/embed"
@@ -36,7 +41,7 @@ class Server(ToolsetElement):
             response.raise_for_status()
             base_url = str(response.url).rstrip("/")
 
-        return f"{base_url}/gradio_api/mcp"
+        return f"{base_url}/gradio_api/mcp/"
 
     def _filter_tools(self, tools: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         if self.tools is None:
@@ -50,18 +55,24 @@ class Server(ToolsetElement):
         return [tool for tool in tools if tool.get("name") in tool_names_set]
 
     async def _get_tools_async(self) -> List[Dict[str, Any]]:
-        async with streamablehttp_client(self._mcp_url) as (read_stream, write_stream, _):
+        async with streamablehttp_client(self._mcp_url) as (
+            read_stream,
+            write_stream,
+            _,
+        ):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
 
                 tools_response = await session.list_tools()
                 tools = []
                 for tool in tools_response.tools:
-                    tools.append({
-                        "name": tool.name,
-                        "description": tool.description or "",
-                        "inputSchema": tool.inputSchema
-                    })
+                    tools.append(
+                        {
+                            "name": tool.name,
+                            "description": tool.description or "",
+                            "inputSchema": tool.inputSchema,
+                        }
+                    )
 
                 return self._filter_tools(tools)
 
@@ -83,8 +94,14 @@ class Server(ToolsetElement):
 
         return self._cached_tools
 
-    async def _execute_tool_async(self, tool_name: str, parameters: Dict[str, Any]) -> Any:
-        async with streamablehttp_client(self._mcp_url) as (read_stream, write_stream, _):
+    async def _execute_tool_async(
+        self, tool_name: str, parameters: Dict[str, Any]
+    ) -> Any:
+        async with streamablehttp_client(self._mcp_url) as (
+            read_stream,
+            write_stream,
+            _,
+        ):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
 
