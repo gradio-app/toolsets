@@ -94,7 +94,7 @@ class Toolset:
 
             def get_mcp_url(request: gr.Request):
                 base_url = f"{request.url.scheme}://{request.url.netloc}"
-                return f"MCP Server running using Streamable HTTP: {base_url}/mcp"
+                return f"MCP Server running using Streamable HTTP: {base_url}/gradio_api/mcp"
 
             demo.load(get_mcp_url, outputs=mcp_url)
 
@@ -120,14 +120,14 @@ class Toolset:
             path = scope.get("path", "")
             if not path.endswith(
                 (
-                    "/mcp",
-                    "/mcp/",
-                    "/mcp/http",
-                    "/mcp/http/",
+                    "/gradio_api/mcp",
+                    "/gradio_api/mcp/",
+                    "/gradio_api/mcp/http",
+                    "/gradio_api/mcp/http/",
                 )
             ):
                 response = Response(
-                    content=f"Path '{path}' not found. The MCP HTTP transport is available at /mcp.",
+                    content=f"Path '{path}' not found. The MCP HTTP transport is available at /gradio_api/mcp.",
                     status_code=404,
                 )
                 await response(scope, receive, send)
@@ -166,7 +166,7 @@ class Toolset:
             app_kwargs["lifespan"] = combined_lifespan
             kwargs["app_kwargs"] = app_kwargs
             app = original_create_app(*args, **kwargs)
-            app.mount("/mcp", mcp_app)
+            app.mount("/gradio_api/mcp", mcp_app)
             return app
 
         gr.routes.App.create_app = create_app_wrapper
