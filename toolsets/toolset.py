@@ -8,17 +8,18 @@ from .toolset_element import ToolsetElement
 class Toolset:
     def __init__(self):
         self._elements: List[ToolsetElement] = []
-        self._tool_data: Dict[str, Dict[str, Any]] = None
+        self._tool_data: Dict[str, Dict[str, Any]] = {}
 
     def add(self, element: ToolsetElement) -> "Toolset":
         self._elements.append(element)
         return self
 
     def _get_tool_data(self) -> Dict[str, Dict[str, Any]]:
-        if self._tool_data is not None:
+        if self._tool_data:
             return
         for element in self._elements:
             tools = element.get_tools()
+            print(tools)
             for tool in tools:
                 self._tool_data[tool.pop("name")] = tool
 

@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="logo.png" alt="Toolsets Logo" width="300">
+</div>
+
 # toolsets
 
 A high-level abstraction layer that aggregates multiple MCP (Model Context Protocol) servers and tools into a single, unified entry point. Toolsets uses semantic search over tool embeddings to dynamically retrieve only the most relevant tools for each query, reducing context window bloat and improving LLM reasoning efficiency.
