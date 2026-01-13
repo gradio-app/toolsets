@@ -1,27 +1,17 @@
-from toolsets import Toolset
+from toolsets import Toolset, Server
 
-if __name__ == "__main__":
-    toolset = Toolset()
+t = Toolset()
 
-    print("Adding tools from Gradio Spaces...")
-
-    spaces = [
-        "ResembleAI/chatterbox-turbo-demo",
+t.add(
+    Server(
+        "ResembleAI/chatterbox-turbo-d  emo",
+        tools=["generate_speech", "list_voices"]
+    )
+).add(
+    Server(
         "fffiloni/diffusers-image-outpaint",
-        "linoyts/Qwen-Image-Edit-Angles"
-    ]
+        tools=["outpaint"]
+    )
+)
 
-    for space in spaces:
-        try:
-            print(f"Adding tools from {space}...")
-            toolset.add(space)
-            print(f"✓ Successfully added tools from {space}")
-        except Exception as e:
-            print(f"✗ Failed to add tools from {space}: {e}")
-
-    print("\nLaunching Gradio app...")
-    print("The app will be available at http://localhost:7860")
-    print("MCP server endpoint will be available for testing\n")
-
-    toolset.launch(port=7860, share=False)
-
+t.launch()
