@@ -97,19 +97,14 @@ t.launch()
 
 Upcoming features and improvements:
 
-- **More Complete Examples**: Comprehensive examples demonstrating advanced use cases, integration patterns, and best practices
-- **Hugging Face Token Support**: Automatic token passing in headers for private and ZeroGPU spaces
-- **Hugging Face Data Types Integration**:
-  - **Datasets**: Add Hugging Face datasets for easy RAG on documentation and structured data
-  - **Models**: Support for models with inference provider usage (e.g., Inference API, Inference Endpoints)
-  - **Papers**: Search and query capabilities for Hugging Face Papers
-- **Enhanced Error Handling**: Better retry logic, connection pooling, and graceful degradation
-- **Tool Caching**: Cache tool definitions and embeddings to reduce API calls and improve startup time
-- **Multi-Provider Support**: Support for MCP servers beyond Gradio (e.g., custom MCP servers, other hosting platforms)
-- **Tool Versioning**: Track and manage tool versions, handle updates gracefully
-- **Performance Optimizations**: Batch embedding generation, parallel tool discovery, optimized search algorithms
-- **UI Enhancements**: Better visualization of tool relationships, search history, and usage analytics
-- **Testing Infrastructure**: Comprehensive test suite with mock MCP servers and integration tests
+- [ ] **More Complete Examples**: Comprehensive examples demonstrating advanced use cases, integration patterns, and best practices
+- [ ] **Hugging Face Token Support**: Automatic token passing in headers for private and ZeroGPU spaces
+- [ ] **Hugging Face Data Types Integration**:
+  - [ ] **Datasets**: Add Hugging Face datasets for easy RAG on documentation and structured data
+  - [ ] **Models**: Support for models with inference provider usage (e.g., Inference API, Inference Endpoints)
+  - [ ] **Papers**: Search and query capabilities for Hugging Face Papers
+- [ ] **Enhanced Error Handling**: Better retry logic, connection pooling, and graceful degradation
+- [ ] **Tool Caching**: Cache tool definitions and embeddings to reduce API calls and improve startup time
 
 ## Contributing
 
