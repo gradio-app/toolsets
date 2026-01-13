@@ -4,13 +4,15 @@ t = Toolset()
 
 t.add(
     Server(
-        "ResembleAI/chatterbox-turbo-d  emo",
-        tools=["generate_speech", "list_voices"]
+        "prithivMLmods/Qwen-Image-Edit-2511-LoRAs-Fast"
     )
 ).add(
     Server(
-        "fffiloni/diffusers-image-outpaint",
-        tools=["outpaint"]
+        "zerogpu-aoti/wan2-2-fp8da-aoti"
+    )
+).add(
+    Server(
+        "https://linoyts-qwen-image-edit-angles.hf.space/gradio_api/mcp/"
     )
 )
 
