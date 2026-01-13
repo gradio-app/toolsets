@@ -91,7 +91,6 @@ t = Toolset("My Tools", embedding_model="all-mpnet-base-v2")
 t.add(Server("gradio/mcp_tools"), defer_loading=True)
 t.launch()
 ```
-.
 
 ## Roadmap
 
