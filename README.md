@@ -16,7 +16,7 @@ A Python library for aggregating multiple MCP (Model Context Protocol) servers i
 
 ## Example Toolset
 
-* 
+Check out a live example: [Podcasting Toolset](https://huggingface.co/spaces/abidlabs/podcasting-toolset)https://huggingface.co/spaces/abidlabs/podcasting-toolset
 
 ## Create Your Own Toolset
 
@@ -103,6 +103,17 @@ t = Toolset("My Tools", embedding_model="all-mpnet-base-v2")
 t.add(Server("gradio/mcp_tools"), defer_loading=True)
 t.launch(mcp_server=True)
 ```
+
+### Deploying to Hugging Face Spaces
+
+To deploy your toolset to Hugging Face Spaces:
+
+1. Go to [https://huggingface.co/new-space](https://huggingface.co/new-space)
+2. Select the **Gradio** SDK
+3. Create your toolset file (e.g., `app.py`) with your toolset code
+4. Add a `requirements.txt` file with `toolsets` (and optionally `toolsets[deferred]` for semantic search)
+
+Your toolset will be available as both a Gradio UI and an MCP server endpoint.
 
 ## Roadmap
 
