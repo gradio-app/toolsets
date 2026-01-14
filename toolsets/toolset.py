@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import numpy as np
 
@@ -7,25 +7,91 @@ from .toolset_element import ToolsetElement
 
 
 class Toolset:
+    """
+    A toolset that aggregates tools from multiple MCP servers and provides a unified interface.
+
+    Toolsets can combine tools from multiple sources (Gradio Spaces, MCP servers) and expose them
+    through a single Gradio UI and optional MCP server endpoint. Supports deferred tool loading with
+    semantic search for efficient discovery of tools when dealing with large numbers of tools.
+
+    Examples:
+        Basic usage:
+        >>> from toolsets import Server, Toolset
+        >>> t = Toolset("My Tools")
+        >>> t.add(Server("gradio/mcp_tools"))
+        >>> t.launch(mcp_server=True)
+
+        With deferred loading:
+        >>> t = Toolset("My Tools")
+        >>> t.add(Server("gradio/mcp_tools"), defer_loading=True)
+        >>> t.launch(mcp_server=True)
+    """
+
     def __init__(
         self,
-        name: Optional[str] = None,
-        embedding_model: Optional[str] = None,
+        name: str | None = None,
+        embedding_model: str | None = None,
         verbose: bool = True,
+        tool_description_format: str
+        | bool
+        | None = "[{toolset_name} Toolset] {tool_description}",
     ):
+        """
+        Initialize a Toolset.
+
+        Args:
+            name: The name of the toolset. Used in the UI and for prepending to tool descriptions.
+                If None, defaults to "Toolset" in some contexts.
+            embedding_model: The sentence-transformers model name to use for semantic search of
+                deferred tools. Defaults to "all-MiniLM-L6-v2". Only used when tools are added
+                with defer_loading=True.
+            verbose: If True, print messages when tools are added. Defaults to True.
+            tool_description_format: Format string for prepending toolset name to tool descriptions.
+                Uses placeholders: {toolset_name} for the toolset name and {tool_description} for
+                the original description. Defaults to "[{toolset_name} Toolset] {tool_description}".
+                Set to False, None, or "" to disable prepending.
+
+        Examples:
+            >>> t = Toolset("My Tools")
+            >>> t = Toolset("My Tools", embedding_model="all-mpnet-base-v2")
+            >>> t = Toolset("My Tools", tool_description_format="{toolset_name}: {tool_description}")
+            >>> t = Toolset("My Tools", tool_description_format=False)  # Disable prepending
+        """
         self._elements: List[ToolsetElement] = []
         self._deferred_elements: List[ToolsetElement] = []
         self._tool_data: Dict[str, Dict[str, Any]] = {}
         self._tool_to_element: Dict[str, ToolsetElement] = {}
         self._deferred_tool_data: Dict[str, Dict[str, Any]] = {}
         self._deferred_tool_to_element: Dict[str, ToolsetElement] = {}
-        self._deferred_tool_embeddings: Optional[List[List[float]]] = None
+        self._deferred_tool_embeddings: List[List[float]] | None = None
         self._deferred_tool_names: List[str] = []
         self._embedding_model_name = embedding_model or "all-MiniLM-L6-v2"
         self._name = name
         self._verbose = verbose
+        self._tool_description_format = (
+            None if tool_description_format is False else tool_description_format
+        )
 
     def add(self, element: ToolsetElement, defer_loading: bool = False) -> "Toolset":
+        """
+        Add a toolset element (e.g., an MCP server) to this toolset.
+
+        Args:
+            element: The toolset element to add (typically a Server instance).
+            defer_loading: If True, tools from this element are not immediately loaded.
+                Instead, they can be discovered via semantic search using the "Search Deferred Tools"
+                tool. This is useful when dealing with large numbers of tools to save context length.
+                Defaults to False.
+
+        Returns:
+            Self for method chaining.
+
+        Examples:
+            >>> from toolsets import Server, Toolset
+            >>> t = Toolset("My Tools")
+            >>> t.add(Server("gradio/mcp_tools"))
+            >>> t.add(Server("gradio/mcp_letter_counter_app"), defer_loading=True)
+        """
         if defer_loading:
             self._deferred_elements.append(element)
             self._tool_data = {}
@@ -48,6 +114,12 @@ class Toolset:
             for tool in tools:
                 tool_name = tool.pop("name")
                 tool_copy = tool.copy()
+                if self._tool_description_format and self._name:
+                    description = tool_copy.get("description", "")
+                    if description:
+                        tool_copy["description"] = self._tool_description_format.format(
+                            toolset_name=self._name, tool_description=description
+                        )
                 self._tool_data[tool_name] = tool_copy
                 self._tool_to_element[tool_name] = element
         return self._tool_data
@@ -60,6 +132,12 @@ class Toolset:
             for tool in tools:
                 tool_name = tool.pop("name")
                 tool_copy = tool.copy()
+                if self._tool_description_format and self._name:
+                    description = tool_copy.get("description", "")
+                    if description:
+                        tool_copy["description"] = self._tool_description_format.format(
+                            toolset_name=self._name, tool_description=description
+                        )
                 self._deferred_tool_data[tool_name] = tool_copy
                 self._deferred_tool_to_element[tool_name] = element
         return self._deferred_tool_data
@@ -165,4 +243,27 @@ class Toolset:
         return results
 
     def launch(self, mcp_server: bool = False):
+        """
+        Launch the Gradio UI for this toolset.
+
+        Starts a Gradio web interface that displays all available tools, allows testing them,
+        and optionally exposes an MCP server endpoint for programmatic access.
+
+        Args:
+            mcp_server: If True, creates and integrates an MCP server that exposes all tools
+                through the MCP protocol at the `/gradio_api/mcp` endpoint. The MCP server
+                can be accessed by MCP clients for programmatic tool usage. Defaults to False.
+
+        Examples:
+            >>> from toolsets import Server, Toolset
+            >>> t = Toolset("My Tools")
+            >>> t.add(Server("gradio/mcp_tools"))
+            >>> t.launch()  # UI only
+            >>> t.launch(mcp_server=True)  # UI + MCP server
+
+        Note:
+            When mcp_server=True, the MCP server endpoint is available at
+            `http://localhost:7860/gradio_api/mcp` (or the appropriate host/port).
+            Connection details are shown in the "MCP Info" tab of the UI.
+        """
         launch_gradio_ui(self, mcp_server=mcp_server)

@@ -1,6 +1,6 @@
 import asyncio
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import httpx
 from mcp import ClientSession
@@ -23,13 +23,13 @@ class MCPServerNotFoundError(Exception):
 
 
 class Server(ToolsetElement):
-    def __init__(self, url_or_space: str, tools: Optional[List[str] | str] = None):
+    def __init__(self, url_or_space: str, tools: List[str] | str | None = None):
         """
         Adds all of the tools from the server to the toolset. The server can be a Gradio Space or any arbitrary MCP server using the Streamable HTTP protocol.
 
         Args:
             url_or_space (str): The URL of the MCP server (e.g. https://huggingface.co/spaces/username/space-name/gradio_api/mcp) or space name (username/space-name) of the server.
-            tools (Optional[List[str] | str]): The tools to add from the server. If None, all tools are added. Invalid tool names are ignored. Instead of a list of tool names, a regular expression can be provided to match tool names.
+            tools (List[str] | str | None): The tools to add from the server. If None, all tools are added. Invalid tool names are ignored. Instead of a list of tool names, a regular expression can be provided to match tool names.
 
         Returns:
             Server: The server instance.
@@ -37,7 +37,7 @@ class Server(ToolsetElement):
         self.url_or_space = url_or_space
         self.tools = tools
         self._mcp_url = self._resolve_mcp_url(url_or_space)
-        self._cached_tools: Optional[List[Dict[str, Any]]] = None
+        self._cached_tools: List[Dict[str, Any]] | None = None
 
     @property
     def name(self) -> str:
