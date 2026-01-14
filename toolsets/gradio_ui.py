@@ -170,18 +170,19 @@ def launch_gradio_ui(toolset: "Toolset") -> None:
                 )
 
         with gr.Tab("MCP Info"):
+            mcp_url = gr.Textbox(label="MCP URL (Streamable HTTP transport).")
+            mcp_config = gr.JSON(label="MCP Configuration", value={})
             gr.Markdown(
                 "This MCP server was created with the [toolsets](https://github.com/abidlabs/toolsets) library."
             )
-            mcp_url = gr.Markdown()
 
-        def get_mcp_url(request: gr.Request):
+        def get_mcp_info(request: gr.Request):
             base_url = f"{request.url.scheme}://{request.url.netloc}"
-            return (
-                f"MCP Server running using Streamable HTTP: {base_url}/gradio_api/mcp"
-            )
+            mcp_endpoint = f"{base_url}/gradio_api/mcp"
+            config = {"mcpServers": {"gradio": {"url": mcp_endpoint}}}
+            return mcp_endpoint, config
 
-        demo.load(get_mcp_url, outputs=mcp_url)
+        demo.load(get_mcp_info, outputs=[mcp_url, mcp_config])
 
     try:
         mcp_server = create_mcp_server(toolset)
