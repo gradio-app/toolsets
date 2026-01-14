@@ -101,12 +101,47 @@ When `mcp_server=True`, the MCP server is available at `/gradio_api/mcp` and a c
 ### Custom Embedding Model
 
 ```python
-from toolsets import Toolset
+from toolsets import Server, Toolset
 
 # Use a different sentence-transformers model
 t = Toolset("My Tools", embedding_model="all-mpnet-base-v2")
 t.add(Server("gradio/mcp_tools"), defer_loading=True)
 t.launch(mcp_server=True)
+```
+
+### Guiding Tool Selection with Notes
+
+When you have multiple tools that serve similar purposes, you can add `notes` to guide the LLM on when to use each tool. Notes are appended to the tool description and help the model make better decisions about which tool to call.
+
+```python
+from toolsets import Server, Toolset
+
+t = Toolset("Podcasting Pro Tools")
+
+t.add(Server("MohamedRashad/Audio-Separator"))
+t.add(Server("hf-audio/whisper-large-v3", tools=["whisper_large_v3_transcribe"]))
+t.add(Server("maya-research/maya1"), notes="Use this to generate voice samples, but not for the actual TTS since voice quality is lower.")
+t.add(Server("ResembleAI/Chatterbox"), notes="Use this to generate the actual TTS, either without a voice sample or with a voice sample created with Maya1.")
+t.add(Server("sanchit-gandhi/musicgen-streaming"))
+
+t.launch(mcp_server=True)
+```
+
+In this example, both Maya1 and Chatterbox can generate speech, but the notes clarify their intended use:
+- Maya1 is best for creating voice samples (reference audio)
+- Chatterbox should be used for final TTS output, optionally using Maya1's output as a voice sample
+
+The tool description format can be customized using the `tool_description_format` parameter:
+
+```python
+# Default format includes the note
+t = Toolset("My Tools")  # "[{toolset_name} Toolset] {tool_description} {note}"
+
+# Custom format
+t = Toolset("My Tools", tool_description_format="({toolset_name}) {tool_description} | Note: {note}")
+
+# Disable formatting entirely
+t = Toolset("My Tools", tool_description_format=False)
 ```
 
 ### Deploying to Hugging Face Spaces
