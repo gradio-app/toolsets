@@ -1,6 +1,6 @@
 import asyncio
 import re
-from typing import Any, Dict, List
+from typing import Any
 
 import httpx
 from mcp import ClientSession
@@ -23,13 +23,13 @@ class MCPServerNotFoundError(Exception):
 
 
 class Server(ToolsetElement):
-    def __init__(self, url_or_space: str, tools: List[str] | str | None = None):
+    def __init__(self, url_or_space: str, tools: list[str] | str | None = None):
         """
         Adds all of the tools from the server to the toolset. The server can be a Gradio Space or any arbitrary MCP server using the Streamable HTTP protocol.
 
         Args:
             url_or_space (str): The URL of the MCP server (e.g. https://huggingface.co/spaces/username/space-name/gradio_api/mcp) or space name (username/space-name) of the server.
-            tools (List[str] | str | None): The tools to add from the server. If None, all tools are added. Invalid tool names are ignored. Instead of a list of tool names, a regular expression can be provided to match tool names.
+            tools (list[str] | str | None): The tools to add from the server. If None, all tools are added. Invalid tool names are ignored. Instead of a list of tool names, a regular expression can be provided to match tool names.
 
         Returns:
             Server: The server instance.
@@ -37,7 +37,7 @@ class Server(ToolsetElement):
         self.url_or_space = url_or_space
         self.tools = tools
         self._mcp_url = self._resolve_mcp_url(url_or_space)
-        self._cached_tools: List[Dict[str, Any]] | None = None
+        self._cached_tools: list[dict[str, Any]] | None = None
 
     @property
     def name(self) -> str:
@@ -74,7 +74,7 @@ class Server(ToolsetElement):
 
         return f"{base_url}/gradio_api/mcp/"
 
-    def _filter_tools(self, tools: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _filter_tools(self, tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if self.tools is None:
             return tools
 
@@ -98,7 +98,7 @@ class Server(ToolsetElement):
             return exc
         return None
 
-    async def _get_tools_async(self) -> List[Dict[str, Any]]:
+    async def _get_tools_async(self) -> list[dict[str, Any]]:
         try:
             async with streamablehttp_client(self._mcp_url) as (
                 read_stream,
@@ -160,12 +160,12 @@ class Server(ToolsetElement):
                 f"Unexpected error connecting to MCP server at '{self._mcp_url}': {e}"
             ) from e
 
-    def get_tools(self) -> List[Dict[str, Any]]:
+    def get_tools(self) -> list[dict[str, Any]]:
         """
         Returns a list of tool names and descriptions from the server.
 
         Returns:
-            List[Dict[str, Any]]: A list of tool dictionaries.
+            list[dict[str, Any]]: A list of tool dictionaries.
         """
         if self._cached_tools is None:
             try:
@@ -179,7 +179,7 @@ class Server(ToolsetElement):
         return self._cached_tools
 
     async def _execute_tool_async(
-        self, tool_name: str, parameters: Dict[str, Any]
+        self, tool_name: str, parameters: dict[str, Any]
     ) -> Any:
         try:
             async with streamablehttp_client(self._mcp_url) as (
@@ -236,13 +236,13 @@ class Server(ToolsetElement):
                 f"Unexpected error executing tool '{tool_name}': {e}"
             ) from e
 
-    def execute_tool(self, tool_name: str, parameters: Dict[str, Any]) -> Any:
+    def execute_tool(self, tool_name: str, parameters: dict[str, Any]) -> Any:
         """
         Executes a tool on the server.
 
         Args:
             tool_name (str): The name of the tool to execute.
-            parameters (Dict[str, Any]): The parameters to pass to the tool.
+            parameters (dict[str, Any]): The parameters to pass to the tool.
         """
         try:
             loop = asyncio.get_event_loop()

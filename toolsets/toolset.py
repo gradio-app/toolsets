@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 
@@ -57,14 +57,14 @@ class Toolset:
             >>> t = Toolset("My Tools", tool_description_format="{toolset_name}: {tool_description}")
             >>> t = Toolset("My Tools", tool_description_format=False)  # Disable prepending
         """
-        self._elements: List[ToolsetElement] = []
-        self._deferred_elements: List[ToolsetElement] = []
-        self._tool_data: Dict[str, Dict[str, Any]] = {}
-        self._tool_to_element: Dict[str, ToolsetElement] = {}
-        self._deferred_tool_data: Dict[str, Dict[str, Any]] = {}
-        self._deferred_tool_to_element: Dict[str, ToolsetElement] = {}
-        self._deferred_tool_embeddings: List[List[float]] | None = None
-        self._deferred_tool_names: List[str] = []
+        self._elements: list[ToolsetElement] = []
+        self._deferred_elements: list[ToolsetElement] = []
+        self._tool_data: dict[str, dict[str, Any]] = {}
+        self._tool_to_element: dict[str, ToolsetElement] = {}
+        self._deferred_tool_data: dict[str, dict[str, Any]] = {}
+        self._deferred_tool_to_element: dict[str, ToolsetElement] = {}
+        self._deferred_tool_embeddings: list[list[float]] | None = None
+        self._deferred_tool_names: list[str] = []
         self._embedding_model_name = embedding_model or "all-MiniLM-L6-v2"
         self._name = name
         self._verbose = verbose
@@ -106,7 +106,7 @@ class Toolset:
                 )
         return self
 
-    def _get_tool_data(self) -> Dict[str, Dict[str, Any]]:
+    def _get_tool_data(self) -> dict[str, dict[str, Any]]:
         if self._tool_data:
             return self._tool_data
         for element in self._elements:
@@ -124,7 +124,7 @@ class Toolset:
                 self._tool_to_element[tool_name] = element
         return self._tool_data
 
-    def _get_deferred_tool_data(self) -> Dict[str, Dict[str, Any]]:
+    def _get_deferred_tool_data(self) -> dict[str, dict[str, Any]]:
         if self._deferred_tool_data:
             return self._deferred_tool_data
         for element in self._deferred_elements:
@@ -174,7 +174,7 @@ class Toolset:
 
     def _search_deferred_tools(
         self, query: str, top_k: int = 2
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         if not self._deferred_tool_data:
             return []
 
