@@ -18,7 +18,10 @@ A Python library for aggregating multiple MCP (Model Context Protocol) servers i
 
 ## Example Toolset
 
-Check out a live example: [Podcasting Toolset](https://huggingface.co/spaces/abidlabs/podcasting-toolset)https://huggingface.co/spaces/abidlabs/podcasting-toolset
+Check out a live example: https://huggingface.co/spaces/abidlabs/podcasting-toolset
+
+<a href="https://huggingface.co/spaces/abidlabs/podcasting-toolset"><img width="1444" height="714" alt="image" src="https://github.com/user-attachments/assets/32e247f0-9e53-4d66-bebf-c106dd364da8" /></a>
+
 
 ## Create Your Own Toolset
 
