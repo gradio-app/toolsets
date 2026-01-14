@@ -164,5 +164,5 @@ class Toolset:
 
         return results
 
-    def launch(self):
-        launch_gradio_ui(self)
+    def launch(self, mcp_server: bool = False):
+        launch_gradio_ui(self, mcp_server=mcp_server)

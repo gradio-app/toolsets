@@ -8,4 +8,4 @@ t.add(Server("ResembleAI/Chatterbox"))
 t.add(Server("maya-research/maya1"))
 t.add(Server("sanchit-gandhi/musicgen-streaming"))
 
-t.launch()
+t.launch(mcp_server=True)
