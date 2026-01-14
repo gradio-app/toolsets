@@ -12,7 +12,7 @@ A Python library for aggregating multiple MCP (Model Context Protocol) servers i
 - **Free hosting on Hugging Face Spaces**: A Toolset itself is _also_ a Gradio application (including a built-in UI for testing and exploring available tools), so you can host it for free on [Hugging Face Spaces](https://huggingface.co/spaces/)
 - **Deferred Tool Loading**: Use semantic search to discover and load tools on-demand. Like Claude's [Advanced Tool Usage](https://www.anthropic.com/engineering/advanced-tool-use) but for any LLM. This is useful when you have 100s of tools or more as it can save the context length of your model.
 
-<img width="1408" height="768" alt="Gemini_Generated_Image_7za89y7za89y7za8_50 (1)" src="https://github.com/user-attachments/assets/851d1e5b-66d7-4000-ac98-2755b31b36ef" />
+<img width="80%" src="https://github.com/user-attachments/assets/851d1e5b-66d7-4000-ac98-2755b31b36ef" />
 
 ## Example Toolset
 
