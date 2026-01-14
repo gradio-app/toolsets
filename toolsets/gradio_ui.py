@@ -4,8 +4,9 @@ from typing import TYPE_CHECKING
 
 import gradio as gr
 from starlette.applications import Starlette
-from starlette.responses import Response
-from starlette.routing import Mount
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
+from starlette.routing import Mount, Route
 from starlette.types import Receive, Scope, Send
 
 from .mcp_server import create_mcp_server
@@ -192,20 +193,117 @@ def launch_gradio_ui(toolset: "Toolset", mcp_server: bool = False) -> None:
     if mcp_server:
         try:
             mcp_server_instance = create_mcp_server(toolset)
-            _integrate_mcp_server(demo, mcp_server_instance)
+            _integrate_mcp_server(demo, mcp_server_instance, toolset)
         except ImportError:
             pass
 
     demo.launch(css=css, footer_links=["settings"])
 
 
-def _integrate_mcp_server(demo: gr.Blocks, mcp_server: "Server") -> None:
+def _get_complete_schema(toolset: "Toolset", request: Request) -> JSONResponse:
+    """
+    Get the complete schema of the toolset API. Used by the Hugging Face MCP server
+    to get the schema for MCP Spaces without needing to establish an SSE connection.
+
+    Args:
+        toolset: The Toolset instance to get the schema for.
+        request: The Starlette request object.
+
+    Returns:
+        A JSONResponse containing a list of tool schemas.
+    """
+    toolset._get_tool_data()
+    query_params = dict(getattr(request, "query_params", {}))
+    selected_tools = None
+    if "tools" in query_params:
+        tools = query_params["tools"].split(",")
+        selected_tools = set(tools)
+
+    schemas = []
+    for tool_name, tool_data in toolset._tool_data.items():
+        if selected_tools is not None and tool_name not in selected_tools:
+            continue
+
+        info = {
+            "name": tool_name,
+            "description": tool_data.get("description", ""),
+            "inputSchema": tool_data.get("inputSchema", {}),
+            "meta": {
+                "file_data_present": False,
+                "mcp_type": "tool",
+                "endpoint_name": tool_name,
+            },
+        }
+        schemas.append(info)
+
+    has_deferred = bool(toolset._deferred_elements)
+    if has_deferred:
+        search_tool_info = {
+            "name": "Search Deferred Tools",
+            "description": "Search for deferred tools using semantic and keyword matching. Returns top matching tools with their names, descriptions, and input schemas.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query to find relevant tools",
+                    },
+                    "top_k": {
+                        "type": "integer",
+                        "description": "Number of top results to return",
+                        "default": 2,
+                    },
+                },
+                "required": ["query"],
+            },
+            "meta": {
+                "file_data_present": False,
+                "mcp_type": "tool",
+                "endpoint_name": "Search Deferred Tools",
+            },
+        }
+        if selected_tools is None or "Search Deferred Tools" in selected_tools:
+            schemas.append(search_tool_info)
+
+        call_tool_info = {
+            "name": "Call Deferred Tool",
+            "description": "Call a deferred tool by name with the provided parameters.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "tool_name": {
+                        "type": "string",
+                        "description": "Name of the deferred tool to call",
+                    },
+                    "parameters": {
+                        "type": "object",
+                        "description": "Parameters to pass to the tool",
+                    },
+                },
+                "required": ["tool_name", "parameters"],
+            },
+            "meta": {
+                "file_data_present": False,
+                "mcp_type": "tool",
+                "endpoint_name": "Call Deferred Tool",
+            },
+        }
+        if selected_tools is None or "Call Deferred Tool" in selected_tools:
+            schemas.append(call_tool_info)
+
+    return JSONResponse(schemas)
+
+
+def _integrate_mcp_server(
+    demo: gr.Blocks, mcp_server: "Server", toolset: "Toolset"
+) -> None:
     """
     Integrate the MCP server with the Gradio demo.
 
     Args:
         demo: The Gradio Blocks instance.
         mcp_server: The MCP server instance to integrate.
+        toolset: The Toolset instance.
     """
     if StreamableHTTPSessionManager is None:
         return
@@ -235,6 +333,9 @@ def _integrate_mcp_server(demo: gr.Blocks, mcp_server: "Server") -> None:
 
         await manager.handle_request(scope, receive, send)
 
+    async def get_schema(request: Request) -> JSONResponse:
+        return _get_complete_schema(toolset, request)
+
     @contextlib.asynccontextmanager
     async def mcp_lifespan(app: Starlette) -> AsyncIterator[None]:
         async with manager.run():
@@ -245,6 +346,7 @@ def _integrate_mcp_server(demo: gr.Blocks, mcp_server: "Server") -> None:
 
     mcp_app = Starlette(
         routes=[
+            Route("/schema", endpoint=get_schema),
             Mount("/", app=handle_streamable_http),
         ],
     )
