@@ -13,15 +13,18 @@ from .mcp_server import create_mcp_server
 
 if TYPE_CHECKING:
     from mcp.server import Server
+    from mcp.server.sse import SseServerTransport
     from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 
     from .toolset import Toolset
 else:
     try:
         from mcp.server import Server
+        from mcp.server.sse import SseServerTransport
         from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
     except ImportError:
         Server = None
+        SseServerTransport = None
         StreamableHTTPSessionManager = None
 
 
@@ -316,14 +319,7 @@ def _integrate_mcp_server(
         scope: Scope, receive: Receive, send: Send
     ) -> None:
         path = scope.get("path", "")
-        if not path.endswith(
-            (
-                "/gradio_api/mcp",
-                "/gradio_api/mcp/",
-                "/gradio_api/mcp/http",
-                "/gradio_api/mcp/http/",
-            )
-        ):
+        if not path.startswith("/gradio_api/mcp"):
             response = Response(
                 content=f"Path '{path}' not found. The MCP HTTP transport is available at /gradio_api/mcp.",
                 status_code=404,
@@ -336,6 +332,38 @@ def _integrate_mcp_server(
     async def get_schema(request: Request) -> JSONResponse:
         return _get_complete_schema(toolset, request)
 
+    async def handle_sse(request: Request) -> Response:
+        """
+        Handle SSE (Server-Sent Events) connections for MCP transport.
+
+        Args:
+            request: The Starlette request object.
+
+        Returns:
+            A Response object.
+        """
+        if SseServerTransport is None:
+            return Response(
+                content="SSE transport is not available. Please install the mcp package.",
+                status_code=503,
+            )
+
+        try:
+            messages_path = "/messages/"
+            sse = SseServerTransport(messages_path)
+            async with sse.connect_sse(
+                request.scope, request.receive, request._send
+            ) as streams:
+                await mcp_server.run(
+                    streams[0],
+                    streams[1],
+                    mcp_server.create_initialization_options(),
+                )
+            return Response()
+        except Exception as e:
+            print(f"MCP SSE connection error: {str(e)}")
+            raise
+
     @contextlib.asynccontextmanager
     async def mcp_lifespan(app: Starlette) -> AsyncIterator[None]:
         async with manager.run():
@@ -344,12 +372,26 @@ def _integrate_mcp_server(
             finally:
                 pass
 
-    mcp_app = Starlette(
-        routes=[
-            Route("/schema", endpoint=get_schema),
-            Mount("/", app=handle_streamable_http),
-        ],
-    )
+    sse = None
+    if SseServerTransport is not None:
+        messages_path = "/messages/"
+        sse = SseServerTransport(messages_path)
+
+    routes = [
+        Route("/schema", endpoint=get_schema),
+    ]
+
+    if sse is not None:
+        routes.extend(
+            [
+                Route("/sse", endpoint=handle_sse),
+                Mount("/messages/", app=sse.handle_post_message),
+            ]
+        )
+
+    routes.append(Mount("/", app=handle_streamable_http))
+
+    mcp_app = Starlette(routes=routes)
 
     original_create_app = gr.routes.App.create_app
 
