@@ -9,12 +9,18 @@ A Python library for aggregating multiple MCP (Model Context Protocol) servers i
 ## Features
 
 - **MCP Server Aggregation**: Combine tools from multiple Gradio Spaces and MCP servers and expose all aggregated tools through a single MCP endpoint.
-- **Free hosting on Hugging Face Spaces**: A Toolset itself is _also_ a Gradio application (including a built-in UI for testing and exploring available tools) , so you can host it for free on [Hugging Face Spaces](https://huggingface.co/spaces/)
+- **Free hosting on Hugging Face Spaces**: A Toolset itself is _also_ a Gradio application (including a built-in UI for testing and exploring available tools), so you can host it for free on [Hugging Face Spaces](https://huggingface.co/spaces/)
 - **Deferred Tool Loading**: Use semantic search to discover and load tools on-demand. Like Claude's [Advanced Tool Usage](https://www.anthropic.com/engineering/advanced-tool-use) but for any LLM. This is useful when you have 100s of tools or more as it can save the context length of your model.
 
 <img width="1408" height="768" alt="Gemini_Generated_Image_7za89y7za89y7za8_50 (1)" src="https://github.com/user-attachments/assets/851d1e5b-66d7-4000-ac98-2755b31b36ef" />
 
-## Installation
+## Example Toolset
+
+* 
+
+## Create Your Own Toolset
+
+### Installation
 
 ```bash
 pip install toolsets
@@ -26,7 +32,9 @@ For deferred tool loading with semantic search:
 pip install toolsets[deferred]
 ```
 
-## Quick Start
+### Examples
+
+A 
 
 ```python
 from toolsets import Server, Toolset
@@ -34,32 +42,16 @@ from toolsets import Server, Toolset
 # Create a toolset
 t = Toolset("My Tools")
 
-# Add tools from MCP servers
+# Add tools from MCP servers on Spaces or arbitrary URLs 
 t.add(Server("gradio/mcp_tools"))
 t.add(Server("username/space-name"))
 
-# Launch the interface and MCP server
-t.launch()
-```
-
-## Examples
-
-### Basic Usage
-
-```python
-from toolsets import Server, Toolset
-
-t = Toolset("Podcasting Tools")
-
-# Add tools from a Gradio Space
-t.add(Server("gradio/mcp_tools"))
-
-# Launch interface at http://localhost:7860
+# Launch UI at http://localhost:7860
 # MCP server available at http://localhost:7860/gradio_api/mcp
 t.launch()
 ```
 
-### Deferred Tool Loading
+Deferred Tool Loading
 
 ```python
 from toolsets import Server, Toolset
@@ -96,7 +88,6 @@ t.launch()
 
 Upcoming features and improvements:
 
-- [ ] **More Complete Examples**: Comprehensive examples demonstrating advanced use cases, integration patterns, and best practices
 - [ ] **Hugging Face Token Support**: Automatic token passing in headers for private and ZeroGPU spaces
 - [ ] **Hugging Face Data Types Integration**:
   - [ ] **Datasets**: Add Hugging Face datasets for easy RAG on documentation and structured data
