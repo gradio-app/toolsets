@@ -34,7 +34,7 @@ class Toolset:
         verbose: bool = True,
         tool_description_format: str
         | bool
-        | None = "[{toolset_name} Toolset] {tool_description}",
+        | None = "[{toolset_name} Toolset] {tool_description} {note}",
     ):
         """
         Initialize a Toolset.
@@ -46,19 +46,20 @@ class Toolset:
                 deferred tools. Defaults to "all-MiniLM-L6-v2". Only used when tools are added
                 with defer_loading=True.
             verbose: If True, print messages when tools are added. Defaults to True.
-            tool_description_format: Format string for prepending toolset name to tool descriptions.
-                Uses placeholders: {toolset_name} for the toolset name and {tool_description} for
-                the original description. Defaults to "[{toolset_name} Toolset] {tool_description}".
-                Set to False, None, or "" to disable prepending.
+            tool_description_format: Format string for tool descriptions.
+                Uses placeholders: {toolset_name} for the toolset name, {tool_description} for
+                the original description, and {note} for the note provided when adding the element.
+                Defaults to "[{toolset_name} Toolset] {tool_description} {note}".
+                Set to False, None, or "" to disable formatting.
 
         Examples:
             >>> t = Toolset("My Tools")
             >>> t = Toolset("My Tools", embedding_model="all-mpnet-base-v2")
             >>> t = Toolset("My Tools", tool_description_format="{toolset_name}: {tool_description}")
-            >>> t = Toolset("My Tools", tool_description_format=False)  # Disable prepending
+            >>> t = Toolset("My Tools", tool_description_format=False)  # Disable formatting
         """
-        self._elements: list[ToolsetElement] = []
-        self._deferred_elements: list[ToolsetElement] = []
+        self._elements: list[tuple[ToolsetElement, str]] = []
+        self._deferred_elements: list[tuple[ToolsetElement, str]] = []
         self._tool_data: dict[str, dict[str, Any]] = {}
         self._tool_to_element: dict[str, ToolsetElement] = {}
         self._deferred_tool_data: dict[str, dict[str, Any]] = {}
@@ -72,7 +73,12 @@ class Toolset:
             None if tool_description_format is False else tool_description_format
         )
 
-    def add(self, element: ToolsetElement, defer_loading: bool = False) -> "Toolset":
+    def add(
+        self,
+        element: ToolsetElement,
+        defer_loading: bool = False,
+        notes: str | None = None,
+    ) -> "Toolset":
         """
         Add a toolset element (e.g., an MCP server) to this toolset.
 
@@ -82,6 +88,9 @@ class Toolset:
                 Instead, they can be discovered via semantic search using the "Search Deferred Tools"
                 tool. This is useful when dealing with large numbers of tools to save context length.
                 Defaults to False.
+            notes: Optional notes about when these tools should be used. This text is appended
+                to each tool's description using the {note} placeholder in tool_description_format.
+                Useful for guiding tool selection by the LLM.
 
         Returns:
             Self for method chaining.
@@ -91,14 +100,16 @@ class Toolset:
             >>> t = Toolset("My Tools")
             >>> t.add(Server("gradio/mcp_tools"))
             >>> t.add(Server("gradio/mcp_letter_counter_app"), defer_loading=True)
+            >>> t.add(Server("gradio/image_tools"), notes="Use these tools for image processing tasks.")
         """
+        note = notes or ""
         if defer_loading:
-            self._deferred_elements.append(element)
+            self._deferred_elements.append((element, note))
             self._tool_data = {}
             if self._verbose:
                 print("* (Deferred) tools added from", element.name)
         else:
-            self._elements.append(element)
+            self._elements.append((element, note))
             tools = element.get_tools()
             if self._verbose:
                 print(
@@ -109,7 +120,7 @@ class Toolset:
     def _get_tool_data(self) -> dict[str, dict[str, Any]]:
         if self._tool_data:
             return self._tool_data
-        for element in self._elements:
+        for element, note in self._elements:
             tools = element.get_tools()
             for tool in tools:
                 tool_name = tool.pop("name")
@@ -118,8 +129,8 @@ class Toolset:
                     description = tool_copy.get("description", "")
                     if description:
                         tool_copy["description"] = self._tool_description_format.format(
-                            toolset_name=self._name, tool_description=description
-                        )
+                            toolset_name=self._name, tool_description=description, note=note
+                        ).strip()
                 self._tool_data[tool_name] = tool_copy
                 self._tool_to_element[tool_name] = element
         return self._tool_data
@@ -127,7 +138,7 @@ class Toolset:
     def _get_deferred_tool_data(self) -> dict[str, dict[str, Any]]:
         if self._deferred_tool_data:
             return self._deferred_tool_data
-        for element in self._deferred_elements:
+        for element, note in self._deferred_elements:
             tools = element.get_tools()
             for tool in tools:
                 tool_name = tool.pop("name")
@@ -136,8 +147,8 @@ class Toolset:
                     description = tool_copy.get("description", "")
                     if description:
                         tool_copy["description"] = self._tool_description_format.format(
-                            toolset_name=self._name, tool_description=description
-                        )
+                            toolset_name=self._name, tool_description=description, note=note
+                        ).strip()
                 self._deferred_tool_data[tool_name] = tool_copy
                 self._deferred_tool_to_element[tool_name] = element
         return self._deferred_tool_data
