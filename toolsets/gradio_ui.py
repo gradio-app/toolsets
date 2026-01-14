@@ -170,7 +170,7 @@ def launch_gradio_ui(toolset: "Toolset") -> None:
                 )
 
         with gr.Tab("MCP Info"):
-            mcp_url = gr.Textbox(label="MCP URL (Streamable HTTP transport).")
+            mcp_url = gr.Textbox(label="MCP URL (Streamable HTTP transport).", buttons=["copy"])
             mcp_config = gr.JSON(label="MCP Configuration", value={})
             gr.Markdown(
                 "This MCP server was created with the [toolsets](https://github.com/abidlabs/toolsets) library."
