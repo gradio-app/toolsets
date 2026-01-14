@@ -8,7 +8,7 @@ A Python library for aggregating multiple MCP (Model Context Protocol) servers i
 
 ## Features
 
-- **MCP Server Aggregation**: Combine tools from multiple Gradio Spaces and MCP servers and expose all aggregated tools through a single MCP endpoint.
+- **MCP Server Aggregation**: Combine tools from multiple Gradio Spaces and MCP servers and expose all aggregated tools through a single MCP endpoint (optional, enabled with `mcp_server=True`).
 - **Free hosting on Hugging Face Spaces**: A Toolset itself is _also_ a Gradio application (including a built-in UI for testing and exploring available tools), so you can host it for free on [Hugging Face Spaces](https://huggingface.co/spaces/)
 - **Deferred Tool Loading**: Use semantic search to discover and load tools on-demand. Like Claude's [Advanced Tool Usage](https://www.anthropic.com/engineering/advanced-tool-use) but for any LLM. This is useful when you have 100s of tools or more as it can save the context length of your model.
 
@@ -47,8 +47,8 @@ t.add(Server("gradio/mcp_tools"))
 t.add(Server("username/space-name"))
 
 # Launch UI at http://localhost:7860
-# MCP server available at http://localhost:7860/gradio_api/mcp
-t.launch()
+# MCP server available at http://localhost:7860/gradio_api/mcp (when mcp_server=True)
+t.launch(mcp_server=True)
 ```
 
 Deferred Tool Loading
@@ -64,7 +64,8 @@ t.add(Server("gradio/mcp_tools"), defer_loading=True)
 # Regular tools are immediately available
 t.add(Server("gradio/mcp_letter_counter_app"))
 
-t.launch()
+# Launch with MCP server enabled
+t.launch(mcp_server=True)
 ```
 
 When tools are added with `defer_loading=True`:
@@ -72,6 +73,25 @@ When tools are added with `defer_loading=True`:
 - Two special MCP tools are added: "Search Deferred Tools" and "Call Deferred Tool"
 - A search interface is available in the Gradio UI for finding deferred tools
 - Tools can be discovered using semantic search based on natural language queries
+
+### MCP Server Configuration
+
+By default, `launch()` only starts the Gradio UI without the MCP server. To enable the MCP server endpoint, pass `mcp_server=True`:
+
+```python
+from toolsets import Server, Toolset
+
+t = Toolset("My Tools")
+t.add(Server("gradio/mcp_tools"))
+
+# Launch UI only (no MCP server)
+t.launch()
+
+# Launch UI with MCP server at http://localhost:7860/gradio_api/mcp
+t.launch(mcp_server=True)
+```
+
+When `mcp_server=True`, the MCP server is available at `/gradio_api/mcp` and a configuration tab is shown in the UI with the connection details.
 
 ### Custom Embedding Model
 
@@ -81,7 +101,7 @@ from toolsets import Toolset
 # Use a different sentence-transformers model
 t = Toolset("My Tools", embedding_model="all-mpnet-base-v2")
 t.add(Server("gradio/mcp_tools"), defer_loading=True)
-t.launch()
+t.launch(mcp_server=True)
 ```
 
 ## Roadmap

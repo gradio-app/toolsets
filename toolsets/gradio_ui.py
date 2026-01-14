@@ -34,7 +34,8 @@ def launch_gradio_ui(toolset: "Toolset", mcp_server: bool = False) -> None:
     """
     toolset._get_tool_data()
     if toolset._verbose:
-        message = f"\n* Launching Toolset UI and MCP server with ({len(toolset._tool_data)}) tools. "
+        mcp_text = " and MCP server" if mcp_server else ""
+        message = f"\n* Launching Toolset UI{mcp_text} with ({len(toolset._tool_data)}) tools. "
         if toolset._deferred_elements:
             message += f"Additional deferred tools are available via tool search."
         print(message, "\n")
@@ -170,22 +171,23 @@ def launch_gradio_ui(toolset: "Toolset", mcp_server: bool = False) -> None:
                     "The `tool_search` tool is only enabled if you add a tool with `defer_loading=True`."
                 )
 
-        with gr.Tab("MCP Info"):
-            mcp_url = gr.Textbox(
-                label="MCP URL (Streamable HTTP transport).", buttons=["copy"]
-            )
-            mcp_config = gr.JSON(label="MCP Configuration", value={})
-            gr.Markdown(
-                "This MCP server was created with the [toolsets](https://github.com/abidlabs/toolsets) library."
-            )
+        if mcp_server:
+            with gr.Tab("MCP Info"):
+                mcp_url = gr.Textbox(
+                    label="MCP URL (Streamable HTTP transport).", buttons=["copy"]
+                )
+                mcp_config = gr.JSON(label="MCP Configuration", value={})
+                gr.Markdown(
+                    "This MCP server was created with the [toolsets](https://github.com/abidlabs/toolsets) library."
+                )
 
-        def get_mcp_info(request: gr.Request):
-            base_url = f"{request.url.scheme}://{request.url.netloc}"
-            mcp_endpoint = f"{base_url}/gradio_api/mcp"
-            config = {"mcpServers": {"gradio": {"url": mcp_endpoint}}}
-            return mcp_endpoint, config
+            def get_mcp_info(request: gr.Request):
+                base_url = f"{request.url.scheme}://{request.url.netloc}"
+                mcp_endpoint = f"{base_url}/gradio_api/mcp"
+                config = {"mcpServers": {"gradio": {"url": mcp_endpoint}}}
+                return mcp_endpoint, config
 
-        demo.load(get_mcp_info, outputs=[mcp_url, mcp_config])
+            demo.load(get_mcp_info, outputs=[mcp_url, mcp_config])
 
     if mcp_server:
         try:
