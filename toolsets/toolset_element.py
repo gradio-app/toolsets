@@ -13,5 +13,10 @@ class ToolsetElement(ABC):
         pass
 
     @abstractmethod
-    def execute_tool(self, tool_name: str, parameters: dict[str, Any]) -> Any:
+    def execute_tool(
+        self,
+        tool_name: str,
+        parameters: dict[str, Any],
+        headers: dict[str, str] | None = None,
+    ) -> Any:
         pass

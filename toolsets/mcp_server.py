@@ -15,6 +15,28 @@ else:
         types = None
         Server = None
 
+HEADERS_TO_FORWARD = {"x-ip-token", "authorization", "x-hf-token"}
+
+
+def _get_forwarded_headers(server: "Server") -> dict[str, str] | None:
+    """
+    Extract headers from the MCP server request context that should be forwarded
+    to underlying MCP servers.
+    """
+    try:
+        context_request = server.request_context.request
+        if context_request is None:
+            return None
+        request_headers = dict(context_request.headers.items())
+        forwarded = {}
+        for key, value in request_headers.items():
+            key_lower = key.lower()
+            if key_lower in HEADERS_TO_FORWARD or key_lower.startswith("x-"):
+                forwarded[key] = value
+        return forwarded if forwarded else None
+    except Exception:
+        return None
+
 
 def create_mcp_server(toolset: "Toolset") -> "Server":
     """
@@ -95,6 +117,8 @@ def create_mcp_server(toolset: "Toolset") -> "Server":
 
     @server.call_tool()
     async def call_tool(name: str, arguments: dict[str, Any]) -> types.CallToolResult:
+        headers = _get_forwarded_headers(server)
+
         if name == "Search Deferred Tools":
             query = arguments.get("query", "")
             top_k = arguments.get("top_k", 2)
@@ -117,7 +141,9 @@ def create_mcp_server(toolset: "Toolset") -> "Server":
                 raise ValueError(f"Deferred tool '{tool_name}' not found")
 
             element = toolset._deferred_tool_to_element[tool_name]
-            result = await run_sync(lambda: element.execute_tool(tool_name, parameters))
+            result = await run_sync(
+                lambda: element.execute_tool(tool_name, parameters, headers)
+            )
 
             if result is None:
                 content = []
@@ -135,7 +161,7 @@ def create_mcp_server(toolset: "Toolset") -> "Server":
             raise ValueError(f"Tool '{name}' not found")
 
         element = toolset._tool_to_element[name]
-        result = await run_sync(lambda: element.execute_tool(name, arguments))
+        result = await run_sync(lambda: element.execute_tool(name, arguments, headers))
 
         if result is None:
             content = []

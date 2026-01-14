@@ -179,10 +179,13 @@ class Server(ToolsetElement):
         return self._cached_tools
 
     async def _execute_tool_async(
-        self, tool_name: str, parameters: dict[str, Any]
+        self,
+        tool_name: str,
+        parameters: dict[str, Any],
+        headers: dict[str, str] | None = None,
     ) -> Any:
         try:
-            async with streamablehttp_client(self._mcp_url) as (
+            async with streamablehttp_client(self._mcp_url, headers=headers) as (
                 read_stream,
                 write_stream,
                 _,
@@ -236,13 +239,19 @@ class Server(ToolsetElement):
                 f"Unexpected error executing tool '{tool_name}': {e}"
             ) from e
 
-    def execute_tool(self, tool_name: str, parameters: dict[str, Any]) -> Any:
+    def execute_tool(
+        self,
+        tool_name: str,
+        parameters: dict[str, Any],
+        headers: dict[str, str] | None = None,
+    ) -> Any:
         """
         Executes a tool on the server.
 
         Args:
             tool_name (str): The name of the tool to execute.
             parameters (dict[str, Any]): The parameters to pass to the tool.
+            headers (dict[str, str] | None): Optional headers to pass to the MCP server.
         """
         try:
             loop = asyncio.get_event_loop()
@@ -250,4 +259,6 @@ class Server(ToolsetElement):
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
-        return loop.run_until_complete(self._execute_tool_async(tool_name, parameters))
+        return loop.run_until_complete(
+            self._execute_tool_async(tool_name, parameters, headers)
+        )
