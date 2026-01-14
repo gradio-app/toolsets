@@ -123,7 +123,10 @@ class Server(ToolsetElement):
             mcp_error = self._extract_mcp_error(e)
             if mcp_error:
                 error_msg = str(mcp_error)
-                if "Session terminated" in error_msg or "not found" in error_msg.lower():
+                if (
+                    "Session terminated" in error_msg
+                    or "not found" in error_msg.lower()
+                ):
                     raise MCPServerNotFoundError(
                         f"Unable to connect to MCP server at '{self._mcp_url}'. "
                         f"The Space '{self.url_or_space}' may not have MCP enabled. "
@@ -198,7 +201,10 @@ class Server(ToolsetElement):
             mcp_error = self._extract_mcp_error(e)
             if mcp_error:
                 error_msg = str(mcp_error)
-                if "Session terminated" in error_msg or "not found" in error_msg.lower():
+                if (
+                    "Session terminated" in error_msg
+                    or "not found" in error_msg.lower()
+                ):
                     raise MCPServerNotFoundError(
                         f"Unable to connect to MCP server at '{self._mcp_url}'. "
                         f"The Space '{self.url_or_space}' may not have MCP enabled."
