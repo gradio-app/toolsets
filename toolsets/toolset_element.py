@@ -3,6 +3,11 @@ from typing import Any, Dict, List
 
 
 class ToolsetElement(ABC):
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
+
     @abstractmethod
     def get_tools(self) -> List[Dict[str, Any]]:
         pass

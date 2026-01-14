@@ -39,6 +39,10 @@ class Server(ToolsetElement):
         self._mcp_url = self._resolve_mcp_url(url_or_space)
         self._cached_tools: Optional[List[Dict[str, Any]]] = None
 
+    @property
+    def name(self) -> str:
+        return self.url_or_space
+
     def _resolve_mcp_url(self, url_or_space: str) -> str:
         if url_or_space.startswith("http://") or url_or_space.startswith("https://"):
             url = url_or_space.rstrip("/")
@@ -129,7 +133,7 @@ class Server(ToolsetElement):
                 ):
                     raise MCPServerNotFoundError(
                         f"Unable to connect to MCP server at '{self._mcp_url}'. "
-                        f"The Space '{self.url_or_space}' may not have MCP enabled. "
+                        f"The Space '{self.url_or_space}' may not have MCP enabled with Streamable HTTP. "
                         "To enable MCP, launch the Gradio app with `mcp_server=True`."
                     ) from mcp_error
                 raise MCPConnectionError(
@@ -207,7 +211,7 @@ class Server(ToolsetElement):
                 ):
                     raise MCPServerNotFoundError(
                         f"Unable to connect to MCP server at '{self._mcp_url}'. "
-                        f"The Space '{self.url_or_space}' may not have MCP enabled."
+                        f"The Space '{self.url_or_space}' may not have MCP enabled with Streamable HTTP."
                     ) from mcp_error
                 raise MCPConnectionError(
                     f"Error executing tool '{tool_name}' on MCP server: {mcp_error}"
