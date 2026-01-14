@@ -41,7 +41,7 @@ def launch_gradio_ui(toolset: "Toolset", mcp_server: bool = False) -> None:
         mcp_text = " and MCP server" if mcp_server else ""
         message = f"\n* Launching Toolset UI{mcp_text} with ({len(toolset._tool_data)}) tools. "
         if toolset._deferred_elements:
-            message += f"Additional deferred tools are available via tool search."
+            message += "Additional deferred tools are available via tool search."
         print(message, "\n")
     if toolset._deferred_elements:
         try:
