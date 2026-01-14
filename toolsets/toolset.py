@@ -184,9 +184,7 @@ class Toolset:
     def launch(self):
         self._get_tool_data()
         if self._verbose:
-            message = (
-                f"\n* Launching Toolset UI and MCP server with ({len(self._tool_data)}) tools. "
-            )
+            message = f"\n* Launching Toolset UI and MCP server with ({len(self._tool_data)}) tools. "
             if self._deferred_elements:
                 message += f"Additional deferred tools are available via tool search."
             print(message, "\n")
