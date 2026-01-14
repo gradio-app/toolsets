@@ -332,6 +332,11 @@ def _integrate_mcp_server(
     async def get_schema(request: Request) -> JSONResponse:
         return _get_complete_schema(toolset, request)
 
+    sse = None
+    if SseServerTransport is not None:
+        messages_path = "/messages/"
+        sse = SseServerTransport(messages_path)
+
     async def handle_sse(request: Request) -> Response:
         """
         Handle SSE (Server-Sent Events) connections for MCP transport.
@@ -342,15 +347,13 @@ def _integrate_mcp_server(
         Returns:
             A Response object.
         """
-        if SseServerTransport is None:
+        if sse is None:
             return Response(
                 content="SSE transport is not available. Please install the mcp package.",
                 status_code=503,
             )
 
         try:
-            messages_path = "/messages/"
-            sse = SseServerTransport(messages_path)
             async with sse.connect_sse(
                 request.scope, request.receive, request._send
             ) as streams:
@@ -371,11 +374,6 @@ def _integrate_mcp_server(
                 yield
             finally:
                 pass
-
-    sse = None
-    if SseServerTransport is not None:
-        messages_path = "/messages/"
-        sse = SseServerTransport(messages_path)
 
     routes = [
         Route("/schema", endpoint=get_schema),
