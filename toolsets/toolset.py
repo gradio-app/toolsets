@@ -129,7 +129,9 @@ class Toolset:
                     description = tool_copy.get("description", "")
                     if description:
                         tool_copy["description"] = self._tool_description_format.format(
-                            toolset_name=self._name, tool_description=description, note=note
+                            toolset_name=self._name,
+                            tool_description=description,
+                            note=note,
                         ).strip()
                 self._tool_data[tool_name] = tool_copy
                 self._tool_to_element[tool_name] = element
@@ -147,7 +149,9 @@ class Toolset:
                     description = tool_copy.get("description", "")
                     if description:
                         tool_copy["description"] = self._tool_description_format.format(
-                            toolset_name=self._name, tool_description=description, note=note
+                            toolset_name=self._name,
+                            tool_description=description,
+                            note=note,
                         ).strip()
                 self._deferred_tool_data[tool_name] = tool_copy
                 self._deferred_tool_to_element[tool_name] = element
