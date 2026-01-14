@@ -2,7 +2,7 @@
   <img src="logo.png" alt="Toolsets Logo" width="60%">
 </div>
 
-# toolsets
+# `toolsets`
 
 A Python library for aggregating multiple MCP (Model Context Protocol) servers into a single unified MCP server. Toolsets acts as a pass-through server that combines tools from multiple sources and provides semantic search capabilities for deferred tool loading.
 
