@@ -1,6 +1,6 @@
 __version__ = "0.1.0"
 
-from .server import Server
+from .server import MCPServerNotFoundError, MCPConnectionError, Server
 from .toolset import Toolset
 
-__all__ = ["Toolset", "Server"]
+__all__ = ["Toolset", "Server", "MCPConnectionError", "MCPServerNotFoundError"]

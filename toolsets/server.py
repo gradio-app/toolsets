@@ -5,8 +5,21 @@ from typing import Any, Dict, List, Optional
 import httpx
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
+from mcp.shared.exceptions import McpError
 
 from .toolset_element import ToolsetElement
+
+
+class MCPConnectionError(Exception):
+    """Raised when unable to connect to an MCP server."""
+
+    pass
+
+
+class MCPServerNotFoundError(Exception):
+    """Raised when an MCP server is not found or not enabled."""
+
+    pass
 
 
 class Server(ToolsetElement):
@@ -36,10 +49,24 @@ class Server(ToolsetElement):
         space_id = url_or_space
         embed_url = f"https://huggingface.co/spaces/{space_id}/embed"
 
-        with httpx.Client(follow_redirects=True) as client:
-            response = client.get(embed_url)
-            response.raise_for_status()
-            base_url = str(response.url).rstrip("/")
+        try:
+            with httpx.Client(follow_redirects=True, timeout=10.0) as client:
+                response = client.get(embed_url)
+                response.raise_for_status()
+                base_url = str(response.url).rstrip("/")
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                raise MCPServerNotFoundError(
+                    f"Space '{space_id}' not found on Hugging Face. "
+                    "Please check that the space name is correct."
+                ) from e
+            raise MCPConnectionError(
+                f"Error accessing space '{space_id}': HTTP {e.response.status_code}"
+            ) from e
+        except httpx.RequestError as e:
+            raise MCPConnectionError(
+                f"Error connecting to space '{space_id}': {e}"
+            ) from e
 
         return f"{base_url}/gradio_api/mcp/"
 
@@ -54,27 +81,77 @@ class Server(ToolsetElement):
         tool_names_set = set(self.tools)
         return [tool for tool in tools if tool.get("name") in tool_names_set]
 
+    def _extract_mcp_error(self, exc: Exception) -> Exception | None:
+        """Extract McpError from ExceptionGroup if present."""
+        if hasattr(exc, "exceptions"):
+            for sub_exc in exc.exceptions:
+                if isinstance(sub_exc, McpError):
+                    return sub_exc
+                nested = self._extract_mcp_error(sub_exc)
+                if nested:
+                    return nested
+        elif isinstance(exc, McpError):
+            return exc
+        return None
+
     async def _get_tools_async(self) -> List[Dict[str, Any]]:
-        async with streamablehttp_client(self._mcp_url) as (
-            read_stream,
-            write_stream,
-            _,
-        ):
-            async with ClientSession(read_stream, write_stream) as session:
-                await session.initialize()
+        try:
+            async with streamablehttp_client(self._mcp_url) as (
+                read_stream,
+                write_stream,
+                _,
+            ):
+                async with ClientSession(read_stream, write_stream) as session:
+                    await session.initialize()
 
-                tools_response = await session.list_tools()
-                tools = []
-                for tool in tools_response.tools:
-                    tools.append(
-                        {
-                            "name": tool.name,
-                            "description": tool.description or "",
-                            "inputSchema": tool.inputSchema,
-                        }
-                    )
+                    tools_response = await session.list_tools()
+                    tools = []
+                    for tool in tools_response.tools:
+                        tools.append(
+                            {
+                                "name": tool.name,
+                                "description": tool.description or "",
+                                "inputSchema": tool.inputSchema,
+                            }
+                        )
 
-                return self._filter_tools(tools)
+                    return self._filter_tools(tools)
+        except Exception as e:
+            if isinstance(e, (MCPConnectionError, MCPServerNotFoundError)):
+                raise
+
+            mcp_error = self._extract_mcp_error(e)
+            if mcp_error:
+                error_msg = str(mcp_error)
+                if "Session terminated" in error_msg or "not found" in error_msg.lower():
+                    raise MCPServerNotFoundError(
+                        f"Unable to connect to MCP server at '{self._mcp_url}'. "
+                        f"The Space '{self.url_or_space}' may not have MCP enabled. "
+                        "To enable MCP, launch the Gradio app with `mcp_server=True`."
+                    ) from mcp_error
+                raise MCPConnectionError(
+                    f"Error connecting to MCP server at '{self._mcp_url}': {mcp_error}"
+                ) from mcp_error
+
+            if isinstance(e, httpx.HTTPStatusError):
+                if e.response.status_code == 404:
+                    raise MCPServerNotFoundError(
+                        f"MCP server not found at '{self._mcp_url}'. "
+                        f"The Space '{self.url_or_space}' may not have MCP enabled. "
+                        "To enable MCP, launch the Gradio app with `mcp_server=True`."
+                    ) from e
+                raise MCPConnectionError(
+                    f"HTTP error connecting to MCP server at '{self._mcp_url}': {e.response.status_code}"
+                ) from e
+
+            if isinstance(e, httpx.RequestError):
+                raise MCPConnectionError(
+                    f"Network error connecting to MCP server at '{self._mcp_url}': {e}"
+                ) from e
+
+            raise MCPConnectionError(
+                f"Unexpected error connecting to MCP server at '{self._mcp_url}': {e}"
+            ) from e
 
     def get_tools(self) -> List[Dict[str, Any]]:
         """
@@ -97,22 +174,57 @@ class Server(ToolsetElement):
     async def _execute_tool_async(
         self, tool_name: str, parameters: Dict[str, Any]
     ) -> Any:
-        async with streamablehttp_client(self._mcp_url) as (
-            read_stream,
-            write_stream,
-            _,
-        ):
-            async with ClientSession(read_stream, write_stream) as session:
-                await session.initialize()
+        try:
+            async with streamablehttp_client(self._mcp_url) as (
+                read_stream,
+                write_stream,
+                _,
+            ):
+                async with ClientSession(read_stream, write_stream) as session:
+                    await session.initialize()
 
-                result = await session.call_tool(tool_name, arguments=parameters)
+                    result = await session.call_tool(tool_name, arguments=parameters)
 
-                if result.content and len(result.content) > 0:
-                    content = result.content[0]
-                    if hasattr(content, "text"):
-                        return content.text
-                    return str(content)
-                return None
+                    if result.content and len(result.content) > 0:
+                        content = result.content[0]
+                        if hasattr(content, "text"):
+                            return content.text
+                        return str(content)
+                    return None
+        except Exception as e:
+            if isinstance(e, (MCPConnectionError, MCPServerNotFoundError)):
+                raise
+
+            mcp_error = self._extract_mcp_error(e)
+            if mcp_error:
+                error_msg = str(mcp_error)
+                if "Session terminated" in error_msg or "not found" in error_msg.lower():
+                    raise MCPServerNotFoundError(
+                        f"Unable to connect to MCP server at '{self._mcp_url}'. "
+                        f"The Space '{self.url_or_space}' may not have MCP enabled."
+                    ) from mcp_error
+                raise MCPConnectionError(
+                    f"Error executing tool '{tool_name}' on MCP server: {mcp_error}"
+                ) from mcp_error
+
+            if isinstance(e, httpx.HTTPStatusError):
+                if e.response.status_code == 404:
+                    raise MCPServerNotFoundError(
+                        f"MCP server not found at '{self._mcp_url}'. "
+                        f"The Space '{self.url_or_space}' may not have MCP enabled."
+                    ) from e
+                raise MCPConnectionError(
+                    f"HTTP error executing tool '{tool_name}': {e.response.status_code}"
+                ) from e
+
+            if isinstance(e, httpx.RequestError):
+                raise MCPConnectionError(
+                    f"Network error executing tool '{tool_name}': {e}"
+                ) from e
+
+            raise MCPConnectionError(
+                f"Unexpected error executing tool '{tool_name}': {e}"
+            ) from e
 
     def execute_tool(self, tool_name: str, parameters: Dict[str, Any]) -> Any:
         """
