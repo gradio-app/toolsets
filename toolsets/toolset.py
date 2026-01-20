@@ -175,6 +175,7 @@ class Toolset:
         model_kwargs = {}
         try:
             import torch
+
             if torch.cuda.is_available():
                 model_kwargs["torch_dtype"] = "float16"
         except ImportError:
