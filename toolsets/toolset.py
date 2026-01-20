@@ -5,6 +5,8 @@ import numpy as np
 from .gradio_ui import launch_gradio_ui
 from .toolset_element import ToolsetElement
 
+DEFAULT_EMBEDDING_MODEL = "ibm-granite/granite-embedding-small-english-r2"
+
 
 class Toolset:
     """
@@ -43,8 +45,8 @@ class Toolset:
             name: The name of the toolset. Used in the UI and for prepending to tool descriptions.
                 If None, defaults to "Toolset" in some contexts.
             embedding_model: The sentence-transformers model name to use for semantic search of
-                deferred tools. Defaults to "all-MiniLM-L6-v2". Only used when tools are added
-                with defer_loading=True.
+                deferred tools. Defaults to "ibm-granite/granite-embedding-small-english-r2".
+                Only used when tools are added with defer_loading=True.
             verbose: If True, print messages when tools are added. Defaults to True.
             tool_description_format: Format string for tool descriptions.
                 Uses placeholders: {toolset_name} for the toolset name, {tool_description} for
@@ -64,9 +66,10 @@ class Toolset:
         self._tool_to_element: dict[str, ToolsetElement] = {}
         self._deferred_tool_data: dict[str, dict[str, Any]] = {}
         self._deferred_tool_to_element: dict[str, ToolsetElement] = {}
-        self._deferred_tool_embeddings: list[list[float]] | None = None
+        self._deferred_tool_embeddings: np.ndarray | None = None
         self._deferred_tool_names: list[str] = []
-        self._embedding_model_name = embedding_model or "all-MiniLM-L6-v2"
+        self._embedding_model_name = embedding_model or DEFAULT_EMBEDDING_MODEL
+        self._embedding_model: Any = None
         self._name = name
         self._verbose = verbose
         self._tool_description_format = (
@@ -157,9 +160,9 @@ class Toolset:
                 self._deferred_tool_to_element[tool_name] = element
         return self._deferred_tool_data
 
-    def _embed_deferred_tools(self) -> None:
-        if self._deferred_tool_embeddings is not None:
-            return
+    def _get_embedding_model(self) -> Any:
+        if self._embedding_model is not None:
+            return self._embedding_model
 
         try:
             from sentence_transformers import SentenceTransformer
@@ -169,11 +172,43 @@ class Toolset:
                 "Please install it with: `pip install toolsets[deferred]` or `pip install sentence-transformers`"
             ) from e
 
+        model_kwargs = {}
+        try:
+            import torch
+            if torch.cuda.is_available():
+                model_kwargs["torch_dtype"] = "float16"
+        except ImportError:
+            pass
+
+        self._embedding_model = SentenceTransformer(
+            self._embedding_model_name,
+            model_kwargs=model_kwargs if model_kwargs else None,
+        )
+        return self._embedding_model
+
+    def _encode_documents(self, model: Any, texts: list[str]) -> np.ndarray:
+        if hasattr(model, "encode_document"):
+            embeddings = model.encode_document(texts, convert_to_numpy=True)
+        else:
+            embeddings = model.encode(texts, convert_to_numpy=True)
+        return embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+
+    def _encode_query(self, model: Any, query: str) -> np.ndarray:
+        if hasattr(model, "encode_query"):
+            embedding = model.encode_query([query], convert_to_numpy=True)[0]
+        else:
+            embedding = model.encode([query], convert_to_numpy=True)[0]
+        return embedding / np.linalg.norm(embedding)
+
+    def _embed_deferred_tools(self) -> None:
+        if self._deferred_tool_embeddings is not None:
+            return
+
         self._get_deferred_tool_data()
         if not self._deferred_tool_data:
             return
 
-        model = SentenceTransformer(self._embedding_model_name)
+        model = self._get_embedding_model()
 
         texts = []
         self._deferred_tool_names = []
@@ -183,9 +218,7 @@ class Toolset:
             texts.append(text)
             self._deferred_tool_names.append(tool_name)
 
-        self._deferred_tool_embeddings = model.encode(
-            texts, convert_to_numpy=True
-        ).tolist()
+        self._deferred_tool_embeddings = self._encode_documents(model, texts)
 
     def _search_deferred_tools(
         self, query: str, top_k: int = 2
@@ -198,48 +231,36 @@ class Toolset:
         except ImportError:
             return []
 
-        if not self._deferred_tool_embeddings:
+        if self._deferred_tool_embeddings is None:
             return []
 
-        try:
-            from sentence_transformers import SentenceTransformer
-        except ImportError:
-            return []
+        model = self._get_embedding_model()
+        query_embedding = self._encode_query(model, query)
 
-        model = SentenceTransformer(self._embedding_model_name)
-        query_embedding = model.encode([query], convert_to_numpy=True)[0]
+        semantic_scores = np.dot(self._deferred_tool_embeddings, query_embedding)
 
-        semantic_scores = []
         keyword_scores = []
-
         query_lower = query.lower()
         query_words = set(query_lower.split())
 
-        for i, tool_name in enumerate(self._deferred_tool_names):
+        for tool_name in self._deferred_tool_names:
             tool_data = self._deferred_tool_data[tool_name]
-            tool_embedding = self._deferred_tool_embeddings[i]
-
-            semantic_score = float(np.dot(query_embedding, tool_embedding))
-
             description = tool_data.get("description", "").lower()
             name_lower = tool_name.lower()
             keyword_matches = sum(
                 1 for word in query_words if word in name_lower or word in description
             )
             keyword_score = keyword_matches / max(len(query_words), 1)
-
-            semantic_scores.append(semantic_score)
             keyword_scores.append(keyword_score)
 
-        semantic_scores = np.array(semantic_scores)
         keyword_scores = np.array(keyword_scores)
 
-        semantic_normalized = (semantic_scores - semantic_scores.min()) / (
-            semantic_scores.max() - semantic_scores.min() + 1e-8
+        semantic_min, semantic_max = semantic_scores.min(), semantic_scores.max()
+        semantic_normalized = (semantic_scores - semantic_min) / (
+            semantic_max - semantic_min + 1e-8
         )
-        keyword_normalized = keyword_scores
 
-        final_scores = 0.7 * semantic_normalized + 0.3 * keyword_normalized
+        final_scores = 0.7 * semantic_normalized + 0.3 * keyword_scores
 
         top_indices = np.argsort(final_scores)[::-1][:top_k]
 
