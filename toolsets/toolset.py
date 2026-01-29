@@ -88,7 +88,7 @@ class Toolset:
         Args:
             element: The toolset element to add (typically a Server instance).
             defer_loading: If True, tools from this element are not immediately loaded.
-                Instead, they can be discovered via semantic search using the "Search Deferred Tools"
+                Instead, they can be discovered via semantic search using the "search_deferred_tools"
                 tool. This is useful when dealing with large numbers of tools to save context length.
                 Defaults to False.
             notes: Optional notes about when these tools should be used. This text is appended

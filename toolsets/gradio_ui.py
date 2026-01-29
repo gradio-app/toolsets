@@ -103,7 +103,7 @@ def launch_gradio_ui(toolset: "Toolset", mcp_server: bool = False) -> None:
                             },
                         }
                         h_search = gr.HTML(
-                            f"<p><code>Search Deferred Tools</code></p><p>{search_tool_data['description']}</p>",
+                            f"<p><code>search_deferred_tools</code></p><p>{search_tool_data['description']}</p>",
                             container=True,
                             elem_classes="tool-item",
                         )
@@ -130,7 +130,7 @@ def launch_gradio_ui(toolset: "Toolset", mcp_server: bool = False) -> None:
                             },
                         }
                         h_call = gr.HTML(
-                            f"<p><code>Call Deferred Tool</code></p><p>{call_tool_data['description']}</p>",
+                            f"<p><code>call_deferred_tool</code></p><p>{call_tool_data['description']}</p>",
                             container=True,
                             elem_classes="tool-item",
                         )
@@ -242,7 +242,7 @@ def _get_complete_schema(toolset: "Toolset", request: Request) -> JSONResponse:
     has_deferred = bool(toolset._deferred_elements)
     if has_deferred:
         search_tool_info = {
-            "name": "Search Deferred Tools",
+            "name": "search_deferred_tools",
             "description": "Search for deferred tools using semantic and keyword matching. Returns top matching tools with their names, descriptions, and input schemas.",
             "inputSchema": {
                 "type": "object",
@@ -262,14 +262,14 @@ def _get_complete_schema(toolset: "Toolset", request: Request) -> JSONResponse:
             "meta": {
                 "file_data_present": False,
                 "mcp_type": "tool",
-                "endpoint_name": "Search Deferred Tools",
+                "endpoint_name": "search_deferred_tools",
             },
         }
-        if selected_tools is None or "Search Deferred Tools" in selected_tools:
+        if selected_tools is None or "search_deferred_tools" in selected_tools:
             schemas.append(search_tool_info)
 
         call_tool_info = {
-            "name": "Call Deferred Tool",
+            "name": "call_deferred_tool",
             "description": "Call a deferred tool by name with the provided parameters.",
             "inputSchema": {
                 "type": "object",
@@ -288,10 +288,10 @@ def _get_complete_schema(toolset: "Toolset", request: Request) -> JSONResponse:
             "meta": {
                 "file_data_present": False,
                 "mcp_type": "tool",
-                "endpoint_name": "Call Deferred Tool",
+                "endpoint_name": "call_deferred_tool",
             },
         }
-        if selected_tools is None or "Call Deferred Tool" in selected_tools:
+        if selected_tools is None or "call_deferred_tool" in selected_tools:
             schemas.append(call_tool_info)
 
     return JSONResponse(schemas)

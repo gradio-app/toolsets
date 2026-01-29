@@ -73,7 +73,7 @@ def create_mcp_server(toolset: "Toolset") -> "Server":
         if has_deferred:
             tools.append(
                 types.Tool(
-                    name="Search Deferred Tools",
+                    name="search_deferred_tools",
                     description="Search for deferred tools using semantic and keyword matching. Returns top matching tools with their names, descriptions, and input schemas.",
                     inputSchema={
                         "type": "object",
@@ -94,7 +94,7 @@ def create_mcp_server(toolset: "Toolset") -> "Server":
             )
             tools.append(
                 types.Tool(
-                    name="Call Deferred Tool",
+                    name="call_deferred_tool",
                     description="Call a deferred tool by name with the provided parameters.",
                     inputSchema={
                         "type": "object",
@@ -119,7 +119,7 @@ def create_mcp_server(toolset: "Toolset") -> "Server":
     async def call_tool(name: str, arguments: dict[str, Any]) -> types.CallToolResult:
         headers = _get_forwarded_headers(server)
 
-        if name == "Search Deferred Tools":
+        if name == "search_deferred_tools":
             query = arguments.get("query", "")
             top_k = arguments.get("top_k", 2)
             results = await run_sync(
@@ -132,7 +132,7 @@ def create_mcp_server(toolset: "Toolset") -> "Server":
             ]
             return types.CallToolResult(content=content)
 
-        if name == "Call Deferred Tool":
+        if name == "call_deferred_tool":
             tool_name = arguments.get("tool_name")
             parameters = arguments.get("parameters", {})
             if not tool_name:
@@ -154,7 +154,7 @@ def create_mcp_server(toolset: "Toolset") -> "Server":
 
         if name in toolset._deferred_tool_to_element:
             raise ValueError(
-                f"Tool '{name}' is deferred. Use 'Call Deferred Tool' to execute it."
+                f"Tool '{name}' is deferred. Use 'call_deferred_tool' to execute it."
             )
 
         if name not in toolset._tool_to_element:
