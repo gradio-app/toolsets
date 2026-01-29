@@ -279,7 +279,12 @@ class Toolset:
 
         return results
 
-    def launch(self, mcp_server: bool = False):
+    def launch(
+        self,
+        mcp_server: bool = False,
+        share: bool | None = None,
+        server_port: int | None = None,
+    ):
         """
         Launch the Gradio UI for this toolset.
 
@@ -290,6 +295,9 @@ class Toolset:
             mcp_server: If True, creates and integrates an MCP server that exposes all tools
                 through the MCP protocol at the `/gradio_api/mcp` endpoint. The MCP server
                 can be accessed by MCP clients for programmatic tool usage. Defaults to False.
+            share: If True, creates a publicly accessible link for the Gradio UI.
+                Defaults to None (False).
+            server_port: The port to bind the server to. Defaults to None (7860).
 
         Examples:
             >>> from toolsets import Server, Toolset
@@ -297,10 +305,14 @@ class Toolset:
             >>> t.add(Server("gradio/mcp_tools"))
             >>> t.launch()  # UI only
             >>> t.launch(mcp_server=True)  # UI + MCP server
+            >>> t.launch(mcp_server=True, share=True)  # With public link
+            >>> t.launch(server_port=8080)  # Custom port
 
         Note:
             When mcp_server=True, the MCP server endpoint is available at
             `http://localhost:7860/gradio_api/mcp` (or the appropriate host/port).
             Connection details are shown in the "MCP Info" tab of the UI.
         """
-        launch_gradio_ui(self, mcp_server=mcp_server)
+        launch_gradio_ui(
+            self, mcp_server=mcp_server, share=share, server_port=server_port
+        )
