@@ -28,13 +28,20 @@ else:
         StreamableHTTPSessionManager = None
 
 
-def launch_gradio_ui(toolset: "Toolset", mcp_server: bool = False) -> None:
+def launch_gradio_ui(
+    toolset: "Toolset",
+    mcp_server: bool = False,
+    share: bool | None = None,
+    server_port: int | None = None,
+) -> None:
     """
     Launch the Gradio UI for the toolset.
 
     Args:
         toolset: The Toolset instance to create the UI for.
         mcp_server: If True, create and integrate the MCP server. Defaults to False.
+        share: If True, creates a publicly accessible link. Defaults to None (False).
+        server_port: The port to bind the server to. Defaults to None (7860).
     """
     toolset._get_tool_data()
     if toolset._verbose:
@@ -200,7 +207,9 @@ def launch_gradio_ui(toolset: "Toolset", mcp_server: bool = False) -> None:
         except ImportError:
             pass
 
-    demo.launch(css=css, footer_links=["settings"])
+    demo.launch(
+        css=css, footer_links=["settings"], share=share, server_port=server_port
+    )
 
 
 def _get_complete_schema(toolset: "Toolset", request: Request) -> JSONResponse:
