@@ -75,7 +75,7 @@ t.launch(mcp_server=True)
 
 When tools are added with `defer_loading=True`:
 - Tools are not exposed in the base tools list
-- Two special MCP tools are added: "Search Deferred Tools" and "Call Deferred Tool"
+- Two special MCP tools are added: `search_deferred_tools` and `call_deferred_tool`
 - A search interface is available in the Gradio UI for finding deferred tools
 - Tools can be discovered using semantic search based on natural language queries
 
